@@ -11,4 +11,5 @@ class SaintColors {
   static const Color purple = Color(0xFF722b8f);
   static const Color yellow = Color(0xfffcad13);
   static const Color green = Color(0xFF80c242);
+  static const Color red = Color(0xffff0000);
 }

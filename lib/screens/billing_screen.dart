@@ -5,9 +5,22 @@ import 'package:saint_mobile/services/api_service.dart';
 import 'package:saint_mobile/widgets/responsive_layout.dart';
 import 'package:saint_mobile/widgets/saint_appbar.dart';
 
+class PaymentEntry {
+  final Map<String, dynamic> instrument;
+  double amount;
+
+  PaymentEntry({
+    required this.instrument,
+    required this.amount,
+  });
+}
+
 class BillingScreen extends StatefulWidget {
   final ApiService apiService;
-  const BillingScreen({super.key, required this.apiService});
+  const BillingScreen({
+    super.key,
+    required this.apiService,
+  });
 
   @override
   State<BillingScreen> createState() => _BillingScreenState();
@@ -22,8 +35,8 @@ class _BillingScreenState extends State<BillingScreen> {
   };
 
   final List<Map<String, dynamic>> _products = [];
-  Map<String, dynamic>? _selectedProduct;
   final List<PaymentEntry> _payments = [];
+  Map<String, dynamic>? _selectedProduct;
 
   double get _totalAmount => _products.fold(
         0.0,
@@ -31,7 +44,7 @@ class _BillingScreenState extends State<BillingScreen> {
       );
 
   double get _paidAmount => _payments.fold(
-        0,
+        0.0,
         (sum, payment) => sum + payment.amount,
       );
 
@@ -281,7 +294,7 @@ class _BillingScreenState extends State<BillingScreen> {
         ),
       ),
       bottomNavigationBar: BottomActions(
-        onPayMethodsPressed: () => _fetchAndShowSearchDialog('Instrumentos'),
+        onPayMethodsPressed: _showPaymentDialog,
         canTotalize: _remainingAmount <= 0,
       ),
     );
@@ -736,14 +749,4 @@ class BottomActions extends StatelessWidget {
       ),
     );
   }
-}
-
-class PaymentEntry {
-  final Map<String, dynamic> payMethod;
-  double amount;
-
-  PaymentEntry(
-    this.payMethod,
-    this.amount,
-  );
 }
