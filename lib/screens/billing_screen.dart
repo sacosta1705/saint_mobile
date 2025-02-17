@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
@@ -146,6 +148,72 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
+  Map<String, dynamic> _printInvoiceJson(String type) {
+    final invoice = {
+      "correlname": "",
+      "codclie": _controllers['Cliente']?.text,
+      "codvend": _controllers['Vendedor']?.text,
+      "codubic": _controllers['Depósito']?.text,
+      "mtototal": 100,
+      "tgravable": 100,
+      "texento": 0,
+      "monto": 100,
+      "mtotax": 100,
+      "contado": 100,
+      "tipocli": 1,
+      "fechae": DateTime.now().toIso8601String().substring(0, 10),
+      "fechav": DateTime.now().toIso8601String().substring(0, 10),
+      "id3": _controllers['Cliente']?.text ?? "",
+      "notes": [],
+      "ordenc": "123456",
+      "telef": "34556633",
+      "tipofac": type
+    };
+
+    final items = _products.map((product) {
+      return {
+        "coditem": product['code'] ?? "",
+        "comments": [],
+        "precio": 100,
+        "cantidad": 1,
+        "mtotax": 30,
+        "descomp": 1,
+        "desseri": 0,
+        "deslote": 0,
+        "nrounicol": 0,
+        "nrolote": "",
+        "parts": [],
+        "serials": [],
+        "additional": []
+      };
+    }).toList();
+
+    final payforms = _payments.map((payment) {
+      return {
+        "monto": payment.amount,
+        "codtarj": payment.instrument["codtarj"],
+        "fechae": DateTime.now().toIso8601String().substring(0, 10),
+        "descrip": payment.instrument["descrip"],
+      };
+    }).toList();
+
+    final taxes = [
+      {
+        "monto": invoice["mtotax"],
+        "codtaxs": "IVA",
+        "tgravable": 16,
+      }
+    ];
+
+    return {
+      "additional": [],
+      "invoice": invoice,
+      "items": items,
+      "payforms": payforms,
+      "taxes": taxes,
+    };
+  }
+
   @override
   void dispose() {
     for (var c in _controllers.values) {
@@ -168,7 +236,10 @@ class _BillingScreenState extends State<BillingScreen> {
 
       final response = await widget.apiService.get(endpoint);
       final data = List<Map<String, dynamic>>.from(
-          response.map((item) => Map<String, dynamic>.from(item)));
+        response.map(
+          (item) => Map<String, dynamic>.from(item),
+        ),
+      );
       _showSearchDialog(type, data);
     } catch (e) {
       _showDialog("Error", "Error cargando $type");
@@ -296,6 +367,11 @@ class _BillingScreenState extends State<BillingScreen> {
       bottomNavigationBar: BottomActions(
         onPayMethodsPressed: _showPaymentDialog,
         canTotalize: _remainingAmount <= 0,
+        onTotalizePressed: () {
+          var payload = _printInvoiceJson(arguments?['type']);
+          debugPrint(jsonEncode(payload));
+          ApiService().post('invoice', payload);
+        },
       ),
     );
   }
@@ -519,7 +595,10 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                     subtitle: Text(payment.amount.toStringAsFixed(2)),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => widget.onDeletePayment(index),
+                      onPressed: () {
+                        widget.onDeletePayment(index);
+                        setState(() {});
+                      },
                     ),
                   );
                 },
@@ -556,39 +635,41 @@ class SearchDialogContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: searchController,
-          decoration: InputDecoration(
-            labelText: "Buscar $type",
-            suffixIcon: const Icon(Icons.search),
+    return Material(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              labelText: "Buscar $type",
+              suffixIcon: const Icon(Icons.search),
+            ),
+            onChanged: onSearch,
           ),
-          onChanged: onSearch,
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 300,
-          width: double.maxFinite,
-          child: ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final item = data[index];
-              final displayText = type == 'Producto'
-                  ? '${item['codprod']} - ${item['descrip']}'
-                  : type == 'Cliente'
-                      ? '${item['id3']} - ${item['descrip']}'
-                      : item['descrip'];
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 300,
+            width: double.maxFinite,
+            child: ListView.builder(
+              itemCount: data.length,
+              itemBuilder: (context, index) {
+                final item = data[index];
+                final displayText = type == 'Producto'
+                    ? '${item['codprod']} - ${item['descrip']}'
+                    : type == 'Cliente'
+                        ? '${item['id3']} - ${item['descrip']}'
+                        : item['descrip'];
 
-              return ListTile(
-                title: Text(displayText),
-                onTap: () => onSelect(item),
-              );
-            },
+                return ListTile(
+                  title: Text(displayText),
+                  onTap: () => onSelect(item),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -711,10 +792,12 @@ class BottomActions extends StatelessWidget {
     super.key,
     required this.onPayMethodsPressed,
     required this.canTotalize,
+    required this.onTotalizePressed,
   });
 
   final VoidCallback onPayMethodsPressed;
   final bool canTotalize;
+  final VoidCallback onTotalizePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -736,7 +819,7 @@ class BottomActions extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: FilledButton.icon(
-                onPressed: canTotalize ? () {} : null,
+                onPressed: canTotalize ? onTotalizePressed : null,
                 icon: const Icon(Icons.calculate),
                 label: const Text('Totalizar'),
                 style: FilledButton.styleFrom(

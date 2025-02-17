@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 
@@ -85,7 +86,8 @@ class ApiService {
       developer.log("Respuesta POST: ${response.statusCode}"); // Depuración
 
       if (response.statusCode == 200) {
-        developer.log(response.body);
+        final dynamic decoded = jsonDecode(response.body);
+        return decoded;
       } else {
         throw HttpException("Error ${response.statusCode}: ${response.body}");
       }
