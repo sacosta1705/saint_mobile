@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/helpers/settings_helper.dart';
-import 'package:saint_mobile/widgets/responsive_layout.dart';
 
 class SetupCheckScreen extends StatelessWidget {
   final SettingsHelper settingsHelper;
