@@ -8,6 +8,7 @@ class SaintAppbar extends StatelessWidget implements PreferredSizeWidget {
   final bool showLogout;
   final String? type;
   final Color? backgroundColor;
+  final List<Widget>? actions;
 
   const SaintAppbar({
     super.key,
@@ -16,6 +17,7 @@ class SaintAppbar extends StatelessWidget implements PreferredSizeWidget {
     this.showLogout = false,
     this.type,
     this.backgroundColor,
+    this.actions,
   });
 
   void _handleLogout(BuildContext context) {
@@ -47,6 +49,7 @@ class SaintAppbar extends StatelessWidget implements PreferredSizeWidget {
       iconTheme: const IconThemeData(color: SaintColors.white),
       backgroundColor: backgroundColor ?? SaintColors.primary,
       actions: [
+        ...?actions,
         if (showLogout)
           IconButton(
             icon: const Icon(Icons.logout),
