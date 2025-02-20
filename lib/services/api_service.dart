@@ -9,6 +9,8 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
+  static const String baseUrl = "http://192.168.61.242:6163/api/v1";
+
   static const String apiKey = "B5D31933-C996-476C-B116-EF212A41479A";
   static const String apiId = "1093";
   String? token;
@@ -21,13 +23,13 @@ class ApiService {
   }
 
   // <Map<String, dynamic>>
-  Future<bool> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(String username, String password) async {
     final credentials = '$username:$password';
 
     try {
       final response = await http
           .post(
-            Uri.parse('http://64.135.37.214:6163/api/v1/main/login'),
+            Uri.parse('$baseUrl/main/login'),
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': apiKey,
@@ -49,7 +51,7 @@ class ApiService {
         throw Exception(
             "El servidor no devolvió el token Pragma en los headers");
       }
-      return true;
+      return jsonDecode(response.body);
     } on TimeoutException {
       throw TimeoutException(
           'Tiempo límite de espera superado. Verifique su conexión a internet.');
@@ -73,7 +75,7 @@ class ApiService {
 
       final response = await http
           .post(
-            Uri.parse('http://64.135.37.214:6163/api/v1/adm/$endpoint'),
+            Uri.parse('$baseUrl/adm/$endpoint'),
             headers: {
               'Content-Type': 'application/json',
               'Pragma': token!,
@@ -103,7 +105,7 @@ class ApiService {
 
     try {
       final response = await http.get(
-        Uri.parse('http://64.135.37.214:6163/api/v1/adm/$endpoint'),
+        Uri.parse('$baseUrl/adm/$endpoint'),
         headers: {
           'Content-Type': 'application/json',
           'Pragma': token!,

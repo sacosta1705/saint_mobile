@@ -19,6 +19,7 @@ class _LoginFormState extends State<LoginForm> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  String? _companyName;
 
   @override
   void dispose() {
@@ -32,34 +33,42 @@ class _LoginFormState extends State<LoginForm> {
       setState(() => _isLoading = true);
 
       try {
-        final success = await widget.apiService.login(
+        final response = await widget.apiService.login(
           _usernameController.text,
           _passwordController.text,
         );
 
         if (mounted) {
-          if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  "Sesion iniciada.",
-                  style: TextStyle(color: Colors.white),
+          setState(() {
+            _companyName = response['enterprise'];
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Sesión iniciada.",
+                style: TextStyle(
+                  color: SaintColors.white,
                 ),
-                backgroundColor: Colors.green,
               ),
-            );
-            Navigator.of(context).pushReplacementNamed('/menu');
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  "Error al iniciar sesion.",
-                  style: TextStyle(color: Colors.white),
+              backgroundColor: SaintColors.green,
+            ),
+          );
+          Navigator.of(context).pushReplacementNamed('/menu');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Error: $e",
+                style: const TextStyle(
+                  color: SaintColors.white,
                 ),
-                backgroundColor: Colors.red,
               ),
-            );
-          }
+              backgroundColor: SaintColors.red,
+            ),
+          );
         }
       } finally {
         if (mounted) {
