@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:saint_mobile/services/api_service.dart';
-import 'package:saint_mobile/widgets/login_form.dart';
-import 'package:saint_mobile/widgets/responsive_layout.dart';
-import 'package:saint_mobile/widgets/saint_appbar.dart';
-import 'package:saint_mobile/helpers/settings_helper.dart';
+import 'package:provider/provider.dart';
+import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
+// import 'package:saint_mobile/viewmodels/login_viewmodel.dart';
+// import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
+import 'package:saint_mobile/views/widgets/login_form.dart';
+// import 'package:saint_mobile/views/widgets/responsive_layout.dart';
+// import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
+import 'package:saint_mobile/views/widgets/responsive_layout.dart';
+import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 
 class LoginScreen extends StatelessWidget {
   static const String routeName = '/login';
-  final ApiService apiService;
-  final SettingsHelper settingsHelper = SettingsHelper();
 
-  LoginScreen({
-    super.key,
-    required this.apiService,
-  });
+  const LoginScreen({Key? key}) : super(key: key);
 
   void _showAdminPasswordDialog(BuildContext context) {
     showDialog<bool>(
@@ -56,7 +55,7 @@ class LoginScreen extends StatelessWidget {
                 height: 150,
               ),
               const SizedBox(height: 32),
-              LoginForm(apiService: apiService)
+              const LoginForm()
             ],
           ),
         ),
@@ -74,9 +73,7 @@ class AdminPasswordDialog extends StatefulWidget {
 
 class _AdminPasswordDialogState extends State<AdminPasswordDialog> {
   late TextEditingController passwordController;
-  bool isLoading = false;
   bool obscurePassword = true;
-  final SettingsHelper settingsHelper = SettingsHelper();
 
   @override
   void initState() {
@@ -90,49 +87,10 @@ class _AdminPasswordDialogState extends State<AdminPasswordDialog> {
     super.dispose();
   }
 
-  void _validatePassword(BuildContext context) async {
-    setState(() {
-      isLoading = true;
-    });
-
-    final password = passwordController.text;
-    try {
-      final storedPassword = await settingsHelper.getSetting('admin_password');
-
-      if (storedPassword == password) {
-        Navigator.of(context).pop(true);
-      } else {
-        Navigator.of(context).pop(false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Clave incorrecta. Acceso denegado.',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.of(context).pop(false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Error al verificar credenciales.',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final setupViewModel = Provider.of<SetupViewmodel>(context);
+
     return AlertDialog(
       title: const Text('Acceso a configuración'),
       content: Column(
@@ -164,7 +122,7 @@ class _AdminPasswordDialogState extends State<AdminPasswordDialog> {
               ),
             ),
           ),
-          if (isLoading)
+          if (setupViewModel.isLoading)
             const Padding(
               padding: EdgeInsets.only(top: 16.0),
               child: CircularProgressIndicator(
@@ -175,11 +133,33 @@ class _AdminPasswordDialogState extends State<AdminPasswordDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: isLoading ? null : () => Navigator.of(context).pop(false),
+          onPressed: setupViewModel.isLoading
+              ? null
+              : () => Navigator.of(context).pop(false),
           child: const Text('Cancelar'),
         ),
         TextButton(
-          onPressed: isLoading ? null : () => _validatePassword(context),
+          onPressed: setupViewModel.isLoading
+              ? null
+              : () async {
+                  final isValid = await setupViewModel
+                      .validateAdminPassword(passwordController.text);
+
+                  if (isValid) {
+                    Navigator.of(context).pop(true);
+                  } else {
+                    Navigator.of(context).pop(false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Clave incorrecta. Acceso denegado.',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
           child: const Text('Acceder'),
         ),
       ],

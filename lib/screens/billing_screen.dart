@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/services/api_service.dart';
-import 'package:saint_mobile/widgets/responsive_layout.dart';
-import 'package:saint_mobile/widgets/saint_appbar.dart';
+import 'package:saint_mobile/views/widgets/responsive_layout.dart';
+import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 
 class PaymentEntry {
   final Map<String, dynamic> instrument;
@@ -228,7 +228,8 @@ class _BillingScreenState extends State<BillingScreen> {
         'Cliente': 'customers?activo=1',
         'Vendedor': 'sellers?activo=1',
         'Depósito': 'warehouses?activo=1',
-        'Producto': 'products?activo=1',
+        'Producto':
+            'products?activo=1&esimport=0&esempaque=0&deslote=0&descomp=0',
         'Instrumentos': 'paymethods?activo=1'
       }[type];
 

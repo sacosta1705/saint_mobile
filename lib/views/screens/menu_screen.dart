@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
+
 import 'package:saint_mobile/constants/saint_colors.dart';
-import 'package:saint_mobile/services/api_service.dart';
-import 'package:saint_mobile/widgets/responsive_layout.dart';
-import '../widgets/saint_appbar.dart';
 import 'package:saint_mobile/constants/saint_invoice_options.dart';
+import 'package:saint_mobile/views/widgets/responsive_layout.dart';
+import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 
 class MenuScreen extends StatelessWidget {
-  final ApiService apiService;
-
-  const MenuScreen({
-    super.key,
-    required this.apiService,
-  });
+  const MenuScreen({super.key});
 
   Widget _buildMenuCard({
     required IconData icon,
@@ -48,7 +44,7 @@ class MenuScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -58,6 +54,8 @@ class MenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // final menuViewModel = Provider.of<MenuViewmodel>(context);
+
     return Scaffold(
       appBar: const SaintAppbar(
         title: "Menu",

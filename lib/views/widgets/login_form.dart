@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
-import 'package:saint_mobile/services/api_service.dart';
+import 'package:saint_mobile/viewmodels/login_viewmodel.dart';
 
 class LoginForm extends StatefulWidget {
-  final ApiService apiService;
-
-  const LoginForm({
-    super.key,
-    required this.apiService,
-  });
+  const LoginForm({super.key});
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -18,8 +14,6 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  String? _companyName;
 
   @override
   void dispose() {
@@ -28,58 +22,10 @@ class _LoginFormState extends State<LoginForm> {
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-
-      try {
-        final response = await widget.apiService.login(
-          _usernameController.text,
-          _passwordController.text,
-        );
-
-        if (mounted) {
-          setState(() {
-            _companyName = response['enterprise'];
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Sesión iniciada.",
-                style: TextStyle(
-                  color: SaintColors.white,
-                ),
-              ),
-              backgroundColor: SaintColors.green,
-            ),
-          );
-          Navigator.of(context).pushReplacementNamed('/menu');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Error: $e",
-                style: const TextStyle(
-                  color: SaintColors.white,
-                ),
-              ),
-              backgroundColor: SaintColors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final loginViewModel = Provider.of<LoginViewmodel>(context);
+
     return Form(
       key: _formKey,
       child: Column(
@@ -105,10 +51,42 @@ class _LoginFormState extends State<LoginForm> {
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(SaintColors.primary),
             ),
-            onPressed: _isLoading ? null : _handleLogin,
+            onPressed: loginViewModel.isLoading
+                ? null
+                : () async {
+                    if (_formKey.currentState!.validate()) {
+                      final success = await loginViewModel.login(
+                        _usernameController.text,
+                        _passwordController.text,
+                      );
+
+                      if (success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Sesión iniciada.",
+                              style: TextStyle(color: SaintColors.white),
+                            ),
+                            backgroundColor: SaintColors.green,
+                          ),
+                        );
+                        Navigator.of(context).pushReplacementNamed('/menu');
+                      } else if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "Error: ${loginViewModel.errorMessage}",
+                              style: const TextStyle(color: SaintColors.white),
+                            ),
+                            backgroundColor: SaintColors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: _isLoading
+              child: loginViewModel.isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
@@ -149,7 +127,7 @@ class SaintTextWidget extends StatelessWidget {
     return TextFormField(
       controller: _controller,
       keyboardType: TextInputType.text,
-      obscureText: isObscured ? true : false,
+      obscureText: isObscured,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),

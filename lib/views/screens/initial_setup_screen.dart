@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
-import 'package:saint_mobile/helpers/settings_helper.dart';
-import 'package:saint_mobile/widgets/responsive_layout.dart';
-import 'package:saint_mobile/widgets/saint_appbar.dart';
+import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
+import 'package:saint_mobile/views/widgets/responsive_layout.dart';
+import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 
 class InitialSetupScreen extends StatefulWidget {
-  final SettingsHelper settingsHelper;
   final VoidCallback? onSetupComplete;
 
   const InitialSetupScreen({
     super.key,
-    required this.settingsHelper,
     this.onSetupComplete,
   });
 
@@ -22,7 +21,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -30,6 +28,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.height < 600;
+    final setupViewModel = Provider.of<SetupViewmodel>(context);
 
     return Scaffold(
       appBar: const SaintAppbar(title: "Configuración Inicial"),
@@ -42,7 +41,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               key: _formKey,
               child: ListView(
                 children: [
-                  // Adjust logo size based on screen size
+                  // Logo section
                   SizedBox(
                     height: isSmallScreen ? 80 : 120,
                     child: Center(
@@ -55,7 +54,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                   ),
                   SizedBox(height: isSmallScreen ? 16 : 24),
 
-                  // Welcome section with white background
+                  // Welcome section
                   Container(
                     padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
                     decoration: BoxDecoration(
@@ -189,33 +188,28 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                   ),
                   SizedBox(height: isSmallScreen ? 16 : 24),
 
+                  // Submit button
                   ElevatedButton(
-                    onPressed: _isLoading
+                    onPressed: setupViewModel.isLoading
                         ? null
                         : () async {
                             if (_formKey.currentState!.validate()) {
-                              setState(() => _isLoading = true);
-                              try {
-                                await widget.settingsHelper.setInitialPassword(
-                                    _passwordController.text);
-                                if (widget.onSetupComplete != null) {
-                                  widget.onSetupComplete!();
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Error al guardar la clave. Por favor intente nuevamente.',
-                                      ),
-                                      backgroundColor: Colors.red,
+                              final success =
+                                  await setupViewModel.setInitialPassword(
+                                _passwordController.text,
+                              );
+
+                              if (success && widget.onSetupComplete != null) {
+                                widget.onSetupComplete!();
+                              } else if (!success && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Error al guardar la clave. Por favor intente nuevamente.',
                                     ),
-                                  );
-                                }
-                              } finally {
-                                if (mounted) {
-                                  setState(() => _isLoading = false);
-                                }
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
                               }
                             }
                           },
@@ -229,7 +223,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: _isLoading
+                    child: setupViewModel.isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
