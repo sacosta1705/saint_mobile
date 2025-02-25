@@ -8,6 +8,7 @@ final List<Map<String, dynamic>> menuOptions = [
     'icon': Icons.receipt,
     'color': SaintColors.orange,
     'route': '/billing',
+    'moduleKey': 'billing',
   },
   {
     'type': 'F',
@@ -15,6 +16,7 @@ final List<Map<String, dynamic>> menuOptions = [
     'icon': Icons.savings,
     'color': SaintColors.purple,
     'route': '/budget',
+    'moduleKey': 'budget',
   },
   {
     'type': 'C',
@@ -22,6 +24,7 @@ final List<Map<String, dynamic>> menuOptions = [
     'icon': Icons.delivery_dining,
     'color': SaintColors.yellow,
     'route': '/delivery_notes',
+    'moduleKey': 'delivery_note',
   },
   {
     'type': 'E',
@@ -29,5 +32,6 @@ final List<Map<String, dynamic>> menuOptions = [
     'icon': Icons.request_quote,
     'color': SaintColors.green,
     'route': '/orders',
+    'moduleKey': 'orders',
   },
 ];

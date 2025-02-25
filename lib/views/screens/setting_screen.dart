@@ -4,6 +4,7 @@ import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
 import 'package:saint_mobile/views/widgets/responsive_layout.dart';
 import 'package:saint_mobile/views/widgets/saint_appbar.dart';
+import 'package:saint_mobile/views/widgets/login_dialog.dart'; // Importar el nuevo diálogo
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -40,13 +41,38 @@ class _SettingScreenState extends State<SettingScreen> {
     });
   }
 
-  void _testUrlConnection() async {
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => LoginDialog(
+        onLogin: (username, password) {
+          _testUrlConnection(username, password);
+        },
+      ),
+    );
+  }
+
+  void _testUrlConnection(String username, String password) async {
     final viewModel = Provider.of<SettingsViewmodel>(context, listen: false);
-    final success = await viewModel.testUrlConnection(_urlController.text);
+    final success = await viewModel.testUrlConnection(
+      _urlController.text,
+      username,
+      password,
+    );
 
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(viewModel.errorMessage ?? 'Error de conexion')),
+        SnackBar(content: Text(viewModel.errorMessage ?? 'Error de conexión')),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Conexión exitosa con ${viewModel.companyName}',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
@@ -64,7 +90,7 @@ class _SettingScreenState extends State<SettingScreen> {
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Configuracion guardada.'),
+          content: Text('Configuración guardada.'),
         ),
       );
     }
@@ -102,7 +128,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                 ),
-                onPressed: viewModel.isLoading ? null : _testUrlConnection,
+                onPressed: viewModel.isLoading ? null : _showLoginDialog,
                 icon: viewModel.isLoading
                     ? const SizedBox(
                         width: 20,
@@ -184,7 +210,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     const Divider(height: 1, indent: 72),
                     _buildModuleSwitch(
                       viewModel,
-                      'delivery_notes',
+                      'delivery_note',
                       'Notas de Entrega',
                       Icons.local_shipping,
                     ),

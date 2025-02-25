@@ -6,7 +6,7 @@ import 'package:saint_mobile/views/screens/initial_setup_screen.dart';
 import 'package:saint_mobile/views/screens/login_screen.dart';
 
 class SetupCheckScreen extends StatelessWidget {
-  const SetupCheckScreen({Key? key}) : super(key: key);
+  const SetupCheckScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

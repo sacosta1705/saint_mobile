@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
-// import 'package:saint_mobile/viewmodels/login_viewmodel.dart';
-// import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
 import 'package:saint_mobile/views/widgets/login_form.dart';
-// import 'package:saint_mobile/views/widgets/responsive_layout.dart';
-// import 'package:saint_mobile/views/widgets/saint_appbar.dart';
-import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/views/widgets/responsive_layout.dart';
 import 'package:saint_mobile/views/widgets/saint_appbar.dart';
+import 'package:saint_mobile/constants/saint_colors.dart';
 
 class LoginScreen extends StatelessWidget {
   static const String routeName = '/login';
 
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
-  void _showAdminPasswordDialog(BuildContext context) {
-    showDialog<bool>(
+  Future<void> _showAdminPasswordDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return const AdminPasswordDialog();
       },
-    ).then((success) {
-      if (success == true) {
-        Navigator.of(context).pushNamed('/settings');
-      }
-    });
+    );
+
+    // Check if the widget is still mounted and result is true before navigating
+    if (result == true && context.mounted) {
+      Navigator.of(context).pushNamed('/settings');
+    }
   }
 
   @override
@@ -68,7 +65,7 @@ class AdminPasswordDialog extends StatefulWidget {
   const AdminPasswordDialog({super.key});
 
   @override
-  _AdminPasswordDialogState createState() => _AdminPasswordDialogState();
+  State<AdminPasswordDialog> createState() => _AdminPasswordDialogState();
 }
 
 class _AdminPasswordDialogState extends State<AdminPasswordDialog> {
@@ -142,22 +139,27 @@ class _AdminPasswordDialogState extends State<AdminPasswordDialog> {
           onPressed: setupViewModel.isLoading
               ? null
               : () async {
-                  final isValid = await setupViewModel
-                      .validateAdminPassword(passwordController.text);
+                  final isValid = await setupViewModel.validateAdminPassword(
+                    passwordController.text,
+                  );
 
-                  if (isValid) {
-                    Navigator.of(context).pop(true);
-                  } else {
-                    Navigator.of(context).pop(false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Clave incorrecta. Acceso denegado.',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                  if (mounted) {
+                    if (isValid) {
+                      Navigator.of(context).pop(true);
+                    } else {
+                      Navigator.of(context).pop(false);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Clave incorrecta. Acceso denegado.',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
                   }
                 },
           child: const Text('Acceder'),

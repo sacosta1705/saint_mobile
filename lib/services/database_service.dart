@@ -1,4 +1,4 @@
-import 'package:sqflite_sqlcipher/sqflite.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
 
@@ -8,8 +8,6 @@ class DatabaseService {
   DatabaseService._internal();
 
   static Database? _database;
-  static const String _dbPassword = '12345';
-
   static const String _dbName = "saint_mobile.db";
   static const String settingsTable = "settings";
   static const int _dbVersion = 1;
@@ -24,7 +22,6 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), _dbName);
     return await openDatabase(
       path,
-      password: _dbPassword,
       version: _dbVersion,
       onCreate: _onCreate,
       onDowngrade: _onUpgrade,

@@ -1,124 +1,43 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/services/api_service.dart';
+import 'package:saint_mobile/viewmodels/billing_viewmodel.dart';
 import 'package:saint_mobile/views/widgets/responsive_layout.dart';
 import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 
-class PaymentEntry {
-  final Map<String, dynamic> instrument;
-  double amount;
-
-  PaymentEntry({
-    required this.instrument,
-    required this.amount,
-  });
-}
-
 class BillingScreen extends StatefulWidget {
-  final ApiService apiService;
-  const BillingScreen({
-    super.key,
-    required this.apiService,
-  });
+  const BillingScreen({super.key});
 
   @override
   State<BillingScreen> createState() => _BillingScreenState();
 }
 
 class _BillingScreenState extends State<BillingScreen> {
-  final Map<String, TextEditingController> _controllers = {
-    'Cliente': TextEditingController(),
-    'Vendedor': TextEditingController(),
-    'Depósito': TextEditingController(),
-    'Producto': TextEditingController(),
-  };
+  late BillingViewmodel _viewModel;
 
-  final List<Map<String, dynamic>> _products = [];
-  final List<PaymentEntry> _payments = [];
-  Map<String, dynamic>? _selectedProduct;
+  @override
+  void initState() {
+    super.initState();
+  }
 
-  double get _totalAmount => _products.fold(
-        0.0,
-        (sum, product) => sum + (product['total'] ?? 0),
-      );
-
-  double get _paidAmount => _payments.fold(
-        0.0,
-        (sum, payment) => sum + payment.amount,
-      );
-
-  double get _remainingAmount => _totalAmount - _paidAmount;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    _viewModel = BillingViewmodel(apiService: apiService);
+  }
 
   void _showPaymentDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => PaymentBottomSheet(
-        totalAmount: _totalAmount,
-        remainingAmount: _remainingAmount,
-        onAddPayment: _addPayment,
-        payments: _payments,
-        onDeletePayment: _deletePayment,
-        apiService: widget.apiService,
+      builder: (context) => ChangeNotifierProvider.value(
+        value: _viewModel,
+        child: PaymentBottomSheet(),
       ),
     );
-  }
-
-  void _addPayment(PaymentEntry payment) {
-    setState(() {
-      _payments.add(payment);
-    });
-  }
-
-  void _deletePayment(int index) {
-    setState(() {
-      _payments.removeAt(index);
-    });
-  }
-
-  void _addProduct() {
-    if (_selectedProduct != null) {
-      setState(() {
-        // Check if product already exists
-        final existingProductIndex = _products
-            .indexWhere((p) => p['code'] == _selectedProduct!['codprod']);
-
-        if (existingProductIndex != -1) {
-          // Update existing product quantity
-          _products[existingProductIndex]['quantity']++;
-          _products[existingProductIndex]['total'] =
-              _products[existingProductIndex]['quantity'] *
-                  _products[existingProductIndex]['price'];
-        } else {
-          // Add new product
-          _products.add({
-            'code': _selectedProduct!['codprod'],
-            'description': _selectedProduct!['descrip'],
-            'quantity': 1,
-            'price': _selectedProduct!['precio1'] ?? 0.0,
-            'total': _selectedProduct!['precio1'] ?? 0.0,
-          });
-        }
-      });
-      _selectedProduct = null;
-      _controllers['Producto']?.clear();
-    }
-  }
-
-  void _updateProductQuantity(int index, double newQuantity) {
-    setState(() {
-      _products[index]['quantity'] = newQuantity;
-      _products[index]['total'] = newQuantity * _products[index]['price'];
-    });
-  }
-
-  void _deleteProduct(int index) {
-    setState(() {
-      _products.removeAt(index);
-    });
   }
 
   void _confirmDelete(int index) {
@@ -127,7 +46,7 @@ class _BillingScreenState extends State<BillingScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Confirmar'),
         content: Text(
-            '¿Está seguro que desea eliminar ${_products[index]['description']}?'),
+            '¿Está seguro que desea eliminar ${_viewModel.products[index]['description']}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -136,7 +55,7 @@ class _BillingScreenState extends State<BillingScreen> {
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteProduct(index);
+              _viewModel.deleteProduct(index);
             },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
@@ -148,100 +67,12 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
-  Map<String, dynamic> _printInvoiceJson(String type) {
-    final invoice = {
-      "correlname": "",
-      "codclie": _controllers['Cliente']?.text,
-      "codvend": _controllers['Vendedor']?.text,
-      "codubic": _controllers['Depósito']?.text,
-      "mtototal": 100,
-      "tgravable": 100,
-      "texento": 0,
-      "monto": 100,
-      "mtotax": 100,
-      "contado": 100,
-      "tipocli": 1,
-      "fechae": DateTime.now().toIso8601String().substring(0, 10),
-      "fechav": DateTime.now().toIso8601String().substring(0, 10),
-      "id3": _controllers['Cliente']?.text ?? "",
-      "notes": [],
-      "ordenc": "123456",
-      "telef": "34556633",
-      "tipofac": type
-    };
-
-    final items = _products.map((product) {
-      return {
-        "coditem": product['code'] ?? "",
-        "comments": [],
-        "precio": 100,
-        "cantidad": 1,
-        "mtotax": 30,
-        "descomp": 1,
-        "desseri": 0,
-        "deslote": 0,
-        "nrounicol": 0,
-        "nrolote": "",
-        "parts": [],
-        "serials": [],
-        "additional": []
-      };
-    }).toList();
-
-    final payforms = _payments.map((payment) {
-      return {
-        "monto": payment.amount,
-        "codtarj": payment.instrument["codtarj"],
-        "fechae": DateTime.now().toIso8601String().substring(0, 10),
-        "descrip": payment.instrument["descrip"],
-      };
-    }).toList();
-
-    final taxes = [
-      {
-        "monto": invoice["mtotax"],
-        "codtaxs": "IVA",
-        "tgravable": 16,
-      }
-    ];
-
-    return {
-      "additional": [],
-      "invoice": invoice,
-      "items": items,
-      "payforms": payforms,
-      "taxes": taxes,
-    };
-  }
-
-  @override
-  void dispose() {
-    for (var c in _controllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
   Future<void> _fetchAndShowSearchDialog(String type) async {
     try {
-      final endpoint = {
-        'Cliente': 'customers?activo=1',
-        'Vendedor': 'sellers?activo=1',
-        'Depósito': 'warehouses?activo=1',
-        'Producto':
-            'products?activo=1&esimport=0&esempaque=0&deslote=0&descomp=0',
-        'Instrumentos': 'paymethods?activo=1'
-      }[type];
-
-      if (endpoint == null) return;
-
-      final response = await widget.apiService.get(endpoint);
-      final data = List<Map<String, dynamic>>.from(
-        response.map(
-          (item) => Map<String, dynamic>.from(item),
-        ),
-      );
-      _showSearchDialog(type, data);
+      final data = await _viewModel.fetchData(type);
+      if (mounted) {
+        _showSearchDialog(type, data);
+      }
     } catch (e) {
       _showDialog("Error", "Error cargando $type");
     }
@@ -268,11 +99,11 @@ class _BillingScreenState extends State<BillingScreen> {
             }),
             onSelect: (item) {
               if (type == 'Producto') {
-                _selectedProduct = item;
-                _controllers[type]?.text =
+                _viewModel.selectedProduct = item;
+                _viewModel.controllers[type]?.text =
                     '${item['codprod']} - ${item['descrip']}';
               } else {
-                _controllers[type]?.text = item['descrip'];
+                _viewModel.controllers[type]?.text = item['descrip'];
               }
               Navigator.pop(context);
             },
@@ -309,74 +140,255 @@ class _BillingScreenState extends State<BillingScreen> {
     final arguments =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    return Scaffold(
-      appBar: SaintAppbar(
-        title: "Facturación",
-        type: arguments?['type'],
-        showLogout: true,
-        backgroundColor: arguments?['color'],
-      ),
-      body: ResponsiveLayout(
-        maxWidth: 1200,
-        child: Column(
-          children: [
-            ..._controllers.entries.map(
-              (e) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SearchField(
-                        label: e.key,
-                        controller: e.value,
-                        onSearch: () => _fetchAndShowSearchDialog(e.key),
-                      ),
-                    ),
-                    if (e.key == 'Producto' && _selectedProduct != null) ...[
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: _addProduct,
-                        icon: const Icon(Icons.add_circle),
-                        style: IconButton.styleFrom(
-                          backgroundColor: SaintColors.primary,
-                          foregroundColor: SaintColors.white,
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Consumer<BillingViewmodel>(
+        builder: (context, viewModel, _) => Scaffold(
+          appBar: SaintAppbar(
+            title: "Facturación",
+            type: arguments?['type'],
+            showLogout: true,
+            backgroundColor: arguments?['color'],
+          ),
+          body: ResponsiveLayout(
+            maxWidth: 1200,
+            child: Column(
+              children: [
+                ...viewModel.controllers.entries.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SearchField(
+                            label: e.key,
+                            controller: e.value,
+                            onSearch: () => _fetchAndShowSearchDialog(e.key),
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
+                        if (e.key == 'Producto' &&
+                            viewModel.selectedProduct != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: viewModel.addProduct,
+                            icon: const Icon(Icons.add_circle),
+                            style: IconButton.styleFrom(
+                              backgroundColor: SaintColors.primary,
+                              foregroundColor: SaintColors.white,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: ProductsTable(
-                  products: _products,
-                  onQuantityChanged: _updateProductQuantity,
-                  onDelete: _confirmDelete,
+                Expanded(
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ProductsTable(
+                      products: viewModel.products,
+                      onQuantityChanged: viewModel.updateProductQuantity,
+                      onDelete: _confirmDelete,
+                    ),
+                  ),
                 ),
-              ),
+                InvoiceSummary(
+                  totalAmount: viewModel.totalAmount,
+                  paidAmount: viewModel.paidAmount,
+                  remainingAmount: viewModel.remainingAmount,
+                ),
+              ],
             ),
-            InvoiceSummary(
-              totalAmount: _totalAmount,
-              paidAmount: _paidAmount,
-              remainingAmount: _remainingAmount,
-            ),
-          ],
+          ),
+          bottomNavigationBar: BottomActions(
+            onPayMethodsPressed: _showPaymentDialog,
+            canTotalize: viewModel.remainingAmount <= 0,
+            onTotalizePressed: () {
+              viewModel.submitInvoice(arguments?['type'] ?? '');
+            },
+          ),
         ),
       ),
-      bottomNavigationBar: BottomActions(
-        onPayMethodsPressed: _showPaymentDialog,
-        canTotalize: _remainingAmount <= 0,
-        onTotalizePressed: () {
-          var payload = _printInvoiceJson(arguments?['type']);
-          debugPrint(jsonEncode(payload));
-          ApiService().post('invoice', payload);
-        },
+    );
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
+}
+
+class PaymentBottomSheet extends StatelessWidget {
+  const PaymentBottomSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    return Consumer<BillingViewmodel>(
+      builder: (context, viewModel, _) => _PaymentBottomSheetContent(
+        apiService: apiService,
       ),
     );
   }
 }
+
+class _PaymentBottomSheetContent extends StatefulWidget {
+  final ApiService apiService;
+
+  const _PaymentBottomSheetContent({
+    required this.apiService,
+  });
+
+  @override
+  State<_PaymentBottomSheetContent> createState() =>
+      _PaymentBottomSheetContentState();
+}
+
+class _PaymentBottomSheetContentState
+    extends State<_PaymentBottomSheetContent> {
+  Map<String, dynamic>? _selectedInstrument;
+  final _amountController = TextEditingController();
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _addPayment() {
+    if (_selectedInstrument == null) return;
+
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) return;
+
+    final viewModel = Provider.of<BillingViewmodel>(context, listen: false);
+    viewModel.addPayment(
+      PaymentEntry(
+        instrument: _selectedInstrument!,
+        amount: amount,
+      ),
+    );
+
+    setState(() {
+      _selectedInstrument = null;
+      _amountController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = Provider.of<BillingViewmodel>(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Instrumentos de Pago',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: SearchField(
+                    label: 'Instrumento',
+                    controller: TextEditingController(
+                      text: _selectedInstrument?['descrip'] ?? '',
+                    ),
+                    onSearch: () async {
+                      final result = await viewModel.fetchData('Instrumentos');
+                      if (!context.mounted) return;
+
+                      showDialog(
+                        context: context,
+                        builder: (context) => SearchDialogContent(
+                          type: 'Instrumento',
+                          searchController: TextEditingController(),
+                          data: result,
+                          onSearch: (_) {},
+                          onSelect: (instrument) {
+                            setState(() {
+                              _selectedInstrument = instrument;
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 120,
+                  child: TextField(
+                    controller: _amountController,
+                    decoration: const InputDecoration(
+                      labelText: 'Monto',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _addPayment,
+                  icon: const Icon(Icons.add_circle),
+                  style: IconButton.styleFrom(
+                    backgroundColor: SaintColors.primary,
+                    foregroundColor: SaintColors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: viewModel.payments.length,
+                itemBuilder: (context, index) {
+                  final payment = viewModel.payments[index];
+                  return ListTile(
+                    title: Text(payment.instrument['descrip']),
+                    subtitle: Text(payment.amount.toStringAsFixed(2)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        viewModel.deletePayment(index);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            InvoiceSummary(
+              totalAmount: viewModel.totalAmount,
+              paidAmount: viewModel.paidAmount,
+              remainingAmount: viewModel.remainingAmount,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// No modifico las clases utilitarias (UI) ya que no contienen lógica de negocio
+// Mantengo estas clases igual para preservar la funcionalidad de UI
 
 class InvoiceSummary extends StatelessWidget {
   final double totalAmount;
@@ -452,168 +464,6 @@ class _SummaryItem extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class PaymentBottomSheet extends StatefulWidget {
-  final double totalAmount;
-  final double remainingAmount;
-  final Function(PaymentEntry) onAddPayment;
-  final List<PaymentEntry> payments;
-  final Function(int) onDeletePayment;
-  final ApiService apiService;
-
-  const PaymentBottomSheet({
-    super.key,
-    required this.totalAmount,
-    required this.remainingAmount,
-    required this.onAddPayment,
-    required this.payments,
-    required this.onDeletePayment,
-    required this.apiService,
-  });
-
-  @override
-  State<PaymentBottomSheet> createState() => _PaymentBottomSheetState();
-}
-
-class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
-  Map<String, dynamic>? _selectedInstrument;
-  final _amountController = TextEditingController();
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  void _addPayment() {
-    if (_selectedInstrument == null) return;
-
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-
-    widget.onAddPayment(
-      PaymentEntry(
-        instrument: _selectedInstrument!,
-        amount: amount,
-      ),
-    );
-
-    setState(() {
-      _selectedInstrument = null;
-      _amountController.clear();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Instrumentos de Pago',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SearchField(
-                    label: 'Instrumento',
-                    controller: TextEditingController(
-                      text: _selectedInstrument?['descrip'] ?? '',
-                    ),
-                    onSearch: () async {
-                      final result =
-                          await widget.apiService.get('paymethods?activo=1');
-                      if (!context.mounted) return;
-
-                      showDialog(
-                        context: context,
-                        builder: (context) => SearchDialogContent(
-                          type: 'Instrumento',
-                          searchController: TextEditingController(),
-                          data: List<Map<String, dynamic>>.from(result),
-                          onSearch: (_) {},
-                          onSelect: (instrument) {
-                            setState(() {
-                              _selectedInstrument = instrument;
-                            });
-                            Navigator.pop(context);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 120,
-                  child: TextField(
-                    controller: _amountController,
-                    decoration: const InputDecoration(
-                      labelText: 'Monto',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _addPayment,
-                  icon: const Icon(Icons.add_circle),
-                  style: IconButton.styleFrom(
-                    backgroundColor: SaintColors.primary,
-                    foregroundColor: SaintColors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: widget.payments.length,
-                itemBuilder: (context, index) {
-                  final payment = widget.payments[index];
-                  return ListTile(
-                    title: Text(payment.instrument['descrip']),
-                    subtitle: Text(payment.amount.toStringAsFixed(2)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        widget.onDeletePayment(index);
-                        setState(() {});
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            InvoiceSummary(
-              totalAmount: widget.totalAmount,
-              paidAmount: widget.totalAmount - widget.remainingAmount,
-              remainingAmount: widget.remainingAmount,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

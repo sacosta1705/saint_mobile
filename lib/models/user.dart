@@ -3,6 +3,7 @@ class User {
   final String firstName;
   final String lastName;
   final String enterprise;
+  // final String terminal;
   final String token;
 
   User({

@@ -6,6 +6,7 @@ import 'package:saint_mobile/viewmodels/login_viewmodel.dart';
 import 'package:saint_mobile/viewmodels/menu_viewmodel.dart';
 import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
 import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
+import 'package:saint_mobile/views/screens/billing_screen.dart';
 import 'package:saint_mobile/views/screens/login_screen.dart';
 import 'package:saint_mobile/views/screens/menu_screen.dart';
 import 'package:saint_mobile/views/screens/setup_check_screen.dart';
@@ -16,9 +17,17 @@ void main() async {
   final apiService = ApiService();
   final settingsHelper = SettingsHelper();
 
+  final serverUrl = await settingsHelper.getSetting('server_url');
+  if (serverUrl != null && serverUrl.isNotEmpty) {
+    apiService.setBaseUrl(serverUrl);
+  }
+
   runApp(
     MultiProvider(
       providers: [
+        Provider(
+          create: (_) => apiService,
+        ),
         ChangeNotifierProvider(
           create: (_) => LoginViewmodel(apiService: apiService),
         ),
@@ -26,20 +35,20 @@ void main() async {
           create: (_) => SetupViewmodel(settingsHelper: settingsHelper),
         ),
         ChangeNotifierProvider(
-          create: (_) => SettingsViewmodel(apiService: apiService),
+          create: (_) => SettingsViewmodel(
+            apiService: apiService,
+            settingsHelper: settingsHelper,
+          ),
         ),
         ChangeNotifierProvider(
-            create: (_) => MenuViewmodel(
-                  apiService: apiService,
-                ))
+          create: (_) => MenuViewmodel(
+            apiService: apiService,
+          ),
+        ),
       ],
       child: const App(),
     ),
   );
-  // runApp(App(
-  //   apiService: apiService,
-  //   settingsHelper: settingsHelper,
-  // ));
 }
 
 class App extends StatelessWidget {
@@ -55,17 +64,10 @@ class App extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/settings': (context) => const SettingScreen(),
         '/menu': (context) => const MenuScreen(),
-        // '/billing': (context) => BillingScreen(),
-        // '/budget': (context) => BillingScreen(),
-        // '/delivery_notes': (context) => BillingScreen(),
-        // '/orders': (context) => BillingScreen(),
-        // '/login': (context) => LoginScreen(apiService: apiService),
-        // '/settings': (context) => SettingScreen(apiService: apiService),
-        // '/menu': (context) => MenuScreen(apiService: apiService),
-        // '/billing': (context) => BillingScreen(apiService: apiService),
-        // '/budget': (context) => BillingScreen(apiService: apiService),
-        // '/delivery_notes': (context) => BillingScreen(apiService: apiService),
-        // '/orders': (context) => BillingScreen(apiService: apiService),
+        '/billing': (context) => const BillingScreen(),
+        '/orders': (context) => const BillingScreen(),
+        '/delivery_notes': (context) => const BillingScreen(),
+        '/budget': (context) => const BillingScreen(),
       },
     );
   }

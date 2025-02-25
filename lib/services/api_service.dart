@@ -9,7 +9,7 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  static const String baseUrl = "http://192.168.61.242:6163/api/v1";
+  String _baseUrl = "";
 
   static const String apiKey = "B5D31933-C996-476C-B116-EF212A41479A";
   static const String apiId = "1093";
@@ -22,14 +22,34 @@ class ApiService {
     return base64.encode(bytes);
   }
 
+  void setBaseUrl(String url) {
+    if (url.endsWith('/')) {
+      _baseUrl = url.substring(0, url.length - 1);
+    } else {
+      _baseUrl = url;
+    }
+    developer.log('URL del servidor configurada: $_baseUrl');
+  }
+
+  // Método para verificar si la URL base está configurada
+  bool hasValidBaseUrl() {
+    return _baseUrl.isNotEmpty;
+  }
+
   // <Map<String, dynamic>>
   Future<Map<String, dynamic>> login(String username, String password) async {
+    // Verificar que la URL base está configurada
+    if (!hasValidBaseUrl()) {
+      throw Exception(
+          "URL del servidor no configurada. Configure el servidor en ajustes.");
+    }
+
     final credentials = '$username:$password';
 
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/main/login'),
+            Uri.parse('$_baseUrl/main/login'),
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': apiKey,
@@ -65,6 +85,12 @@ class ApiService {
   }
 
   Future<void> post(String endpoint, dynamic payload) async {
+    // Verificar que la URL base está configurada
+    if (!hasValidBaseUrl()) {
+      throw Exception(
+          "URL del servidor no configurada. Configure el servidor en ajustes.");
+    }
+
     if (token == null || token!.isEmpty) {
       throw Exception(
           "Sesion vencida. Debes iniciar sesión primero."); // Validación estricta
@@ -75,7 +101,7 @@ class ApiService {
 
       final response = await http
           .post(
-            Uri.parse('$baseUrl/adm/$endpoint'),
+            Uri.parse('$_baseUrl/adm/$endpoint'),
             headers: {
               'Content-Type': 'application/json',
               'Pragma': token!,
@@ -99,13 +125,19 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> get(String endpoint) async {
+    // Verificar que la URL base está configurada
+    if (!hasValidBaseUrl()) {
+      throw Exception(
+          "URL del servidor no configurada. Configure el servidor en ajustes.");
+    }
+
     if (token == null || token!.isEmpty) {
       throw Exception("Sesion vencida. Iniciar sesion.");
     }
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/adm/$endpoint'),
+        Uri.parse('$_baseUrl/adm/$endpoint'),
         headers: {
           'Content-Type': 'application/json',
           'Pragma': token!,
