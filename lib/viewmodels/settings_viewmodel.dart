@@ -23,6 +23,11 @@ class SettingsViewmodel extends ChangeNotifier {
   String? _defaultWarehouse;
   String? _serverUrl;
 
+  // Añadimos códigos para cliente, vendedor y depósito
+  String? _defaultCustomerCode;
+  String? _defaultSellerCode;
+  String? _defaultWarehouseCode;
+
   SettingsViewmodel({
     required ApiService apiService,
     required SettingsHelper settingsHelper,
@@ -39,6 +44,11 @@ class SettingsViewmodel extends ChangeNotifier {
   String? get defaultSeller => _defaultSeller;
   String? get defaultWarehouse => _defaultWarehouse;
 
+  // Getters para los códigos
+  String? get defaultCustomerCode => _defaultCustomerCode;
+  String? get defaultSellerCode => _defaultSellerCode;
+  String? get defaultWarehouseCode => _defaultWarehouseCode;
+
   bool getModuleAccess(String module) {
     return _moduleAccess[module] ?? false;
   }
@@ -53,18 +63,27 @@ class SettingsViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDefaultCustomer(String customer) {
+  void setDefaultCustomer(String customer, {String? code}) {
     _defaultCustomer = customer;
+    if (code != null) {
+      _defaultCustomerCode = code;
+    }
     notifyListeners();
   }
 
-  void setDefaultSeller(String seller) {
+  void setDefaultSeller(String seller, {String? code}) {
     _defaultSeller = seller;
+    if (code != null) {
+      _defaultSellerCode = code;
+    }
     notifyListeners();
   }
 
-  void setDefaultWarehouse(String warehouse) {
+  void setDefaultWarehouse(String warehouse, {String? code}) {
     _defaultWarehouse = warehouse;
+    if (code != null) {
+      _defaultWarehouseCode = code;
+    }
     notifyListeners();
   }
 
@@ -81,6 +100,14 @@ class SettingsViewmodel extends ChangeNotifier {
     _defaultCustomer = await _settingsHelper.getSetting('default_customer');
     _defaultSeller = await _settingsHelper.getSetting('default_seller');
     _defaultWarehouse = await _settingsHelper.getSetting('default_warehouse');
+
+    // Load default codes
+    _defaultCustomerCode =
+        await _settingsHelper.getSetting('default_customer_code');
+    _defaultSellerCode =
+        await _settingsHelper.getSetting('default_seller_code');
+    _defaultWarehouseCode =
+        await _settingsHelper.getSetting('default_warehouse_code');
 
     // Load module access settings
     for (var module in _moduleAccess.keys) {
@@ -128,6 +155,28 @@ class SettingsViewmodel extends ChangeNotifier {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchData(String type) async {
+    final endpoint = {
+      'Cliente': 'customers?activo=1',
+      'Vendedor': 'sellers?activo=1',
+      'Depósito': 'warehouses?activo=1',
+    }[type];
+
+    if (endpoint == null) return [];
+
+    try {
+      final response = await _apiService.get(endpoint);
+      return List<Map<String, dynamic>>.from(
+        response.map(
+          (item) => Map<String, dynamic>.from(item),
+        ),
+      );
+    } catch (e) {
+      debugPrint("Error fetching $type: $e");
+      return [];
+    }
+  }
+
   Future<bool> saveSettings() async {
     _setLoading(true);
 
@@ -154,6 +203,22 @@ class SettingsViewmodel extends ChangeNotifier {
       if (_defaultWarehouse != null) {
         await _settingsHelper.setSetting(
             'default_warehouse', _defaultWarehouse!);
+      }
+
+      // Save default codes
+      if (_defaultCustomerCode != null) {
+        await _settingsHelper.setSetting(
+            'default_customer_code', _defaultCustomerCode!);
+      }
+
+      if (_defaultSellerCode != null) {
+        await _settingsHelper.setSetting(
+            'default_seller_code', _defaultSellerCode!);
+      }
+
+      if (_defaultWarehouseCode != null) {
+        await _settingsHelper.setSetting(
+            'default_warehouse_code', _defaultWarehouseCode!);
       }
 
       // Save module access settings

@@ -15,6 +15,7 @@ class BillingScreen extends StatefulWidget {
 }
 
 class _BillingScreenState extends State<BillingScreen> {
+  bool _isInitialized = false;
   late BillingViewmodel _viewModel;
 
   @override
@@ -35,7 +36,7 @@ class _BillingScreenState extends State<BillingScreen> {
       isScrollControlled: true,
       builder: (context) => ChangeNotifierProvider.value(
         value: _viewModel,
-        child: PaymentBottomSheet(),
+        child: const PaymentBottomSheet(),
       ),
     );
   }

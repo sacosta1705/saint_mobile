@@ -4,7 +4,7 @@ import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
 import 'package:saint_mobile/views/widgets/responsive_layout.dart';
 import 'package:saint_mobile/views/widgets/saint_appbar.dart';
-import 'package:saint_mobile/views/widgets/login_dialog.dart'; // Importar el nuevo diálogo
+import 'package:saint_mobile/views/widgets/login_dialog.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -96,6 +96,117 @@ class _SettingScreenState extends State<SettingScreen> {
     }
   }
 
+  Future<void> _fetchAndShowSearchDialog(String type) async {
+    final viewModel = Provider.of<SettingsViewmodel>(context, listen: false);
+
+    try {
+      final data = await viewModel.fetchData(type);
+      if (mounted) {
+        _showSearchDialog(type, data);
+      }
+    } catch (e) {
+      _showDialog("Error", "Error cargando $type");
+    }
+  }
+
+  void _showSearchDialog(String type, List<Map<String, dynamic>> data) {
+    final searchController = TextEditingController();
+    List<Map<String, dynamic>> filteredData = List.from(data);
+    final viewModel = Provider.of<SettingsViewmodel>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text("Buscar $type"),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Column(
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    labelText: "Buscar $type",
+                    suffixIcon: const Icon(Icons.search),
+                  ),
+                  onChanged: (query) => setState(() {
+                    filteredData = data
+                        .where((item) => item.values.any((v) => v
+                            .toString()
+                            .toLowerCase()
+                            .contains(query.toLowerCase())))
+                        .toList();
+                  }),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredData.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredData[index];
+                      final displayText = type == 'Cliente'
+                          ? '${item['id3']} - ${item['descrip']}'
+                          : item['descrip'] ?? '';
+
+                      return ListTile(
+                        title: Text(displayText),
+                        onTap: () {
+                          if (type == 'Cliente') {
+                            _customerController.text = item['descrip'];
+                            viewModel.setDefaultCustomer(
+                              item['descrip'],
+                              code: item['codclie'] ?? item['id3'],
+                            );
+                          } else if (type == 'Vendedor') {
+                            _sellerController.text = item['descrip'];
+                            viewModel.setDefaultSeller(
+                              item['descrip'],
+                              code: item['codvend'],
+                            );
+                          } else if (type == 'Depósito') {
+                            _warehouseController.text = item['descrip'];
+                            viewModel.setDefaultWarehouse(
+                              item['descrip'],
+                              code: item['codubic'],
+                            );
+                          }
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cerrar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<SettingsViewmodel>(context);
@@ -123,8 +234,9 @@ class _SettingScreenState extends State<SettingScreen> {
               const SizedBox(height: 16),
               FilledButton.icon(
                 style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(SaintColors.orange),
-                  padding: WidgetStateProperty.all(
+                  backgroundColor:
+                      MaterialStateProperty.all(SaintColors.orange),
+                  padding: MaterialStateProperty.all(
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                 ),
@@ -231,6 +343,7 @@ class _SettingScreenState extends State<SettingScreen> {
               _buildSectionTitle("Valores Predeterminados"),
               const SizedBox(height: 16),
               _buildDefaultField(
+                "Cliente",
                 "Cliente por omisión",
                 "Seleccione un cliente por defecto",
                 Icons.person,
@@ -238,6 +351,7 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
               const SizedBox(height: 16),
               _buildDefaultField(
+                "Vendedor",
                 "Vendedor por omisión",
                 "Seleccione un vendedor por defecto",
                 Icons.badge,
@@ -245,6 +359,7 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
               const SizedBox(height: 16),
               _buildDefaultField(
+                "Depósito",
                 "Depósito por omisión",
                 "Seleccione un depósito por defecto",
                 Icons.warehouse,
@@ -256,8 +371,9 @@ class _SettingScreenState extends State<SettingScreen> {
               // Save Button
               FilledButton.icon(
                 style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(SaintColors.orange),
-                  minimumSize: WidgetStateProperty.all(
+                  backgroundColor:
+                      MaterialStateProperty.all(SaintColors.orange),
+                  minimumSize: MaterialStateProperty.all(
                     const Size(double.infinity, 56),
                   ),
                 ),
@@ -304,25 +420,36 @@ class _SettingScreenState extends State<SettingScreen> {
   }
 
   Widget _buildDefaultField(
+    String type,
     String label,
     String hint,
     IconData icon,
     TextEditingController controller,
   ) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: const OutlineInputBorder(),
-        prefixIcon: Icon(icon, color: SaintColors.orange),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: () {
-            // Show selection dialog or dropdown
-          },
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: label,
+              hintText: hint,
+              border: const OutlineInputBorder(),
+              prefixIcon: Icon(icon, color: SaintColors.orange),
+            ),
+            readOnly: true,
+          ),
         ),
-      ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: () => _fetchAndShowSearchDialog(type),
+          icon: const Icon(Icons.search),
+          style: IconButton.styleFrom(
+            backgroundColor: SaintColors.orange,
+            foregroundColor: SaintColors.white,
+          ),
+        ),
+      ],
     );
   }
 

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:saint_mobile/services/api_service.dart';
+import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
 
 class PaymentEntry {
   final Map<String, dynamic> instrument;
@@ -15,6 +17,13 @@ class PaymentEntry {
 class BillingViewmodel extends ChangeNotifier {
   final ApiService apiService;
 
+  // Map para códigos de cliente, vendedor y depósito
+  final Map<String, String> codes = {
+    'Cliente': '',
+    'Vendedor': '',
+    'Depósito': '',
+  };
+
   // Controllers for form fields
   final Map<String, TextEditingController> controllers = {
     'Cliente': TextEditingController(),
@@ -27,6 +36,7 @@ class BillingViewmodel extends ChangeNotifier {
   final List<Map<String, dynamic>> products = [];
   final List<PaymentEntry> payments = [];
   Map<String, dynamic>? selectedProduct;
+  bool _isInitialized = false;
 
   BillingViewmodel({required this.apiService});
 
@@ -42,6 +52,50 @@ class BillingViewmodel extends ChangeNotifier {
       );
 
   double get remainingAmount => totalAmount - paidAmount;
+
+  // Método para cargar valores predeterminados desde SettingsViewmodel
+  void loadDefaultValues(BuildContext context) {
+    if (_isInitialized) return;
+
+    final settingsViewModel =
+        Provider.of<SettingsViewmodel>(context, listen: false);
+
+    // Cargar cliente predeterminado
+    if (settingsViewModel.defaultClient != null &&
+        settingsViewModel.defaultClient!.isNotEmpty) {
+      controllers['Cliente']?.text = settingsViewModel.defaultClient!;
+
+      // Cargar código de cliente si está disponible
+      if (settingsViewModel.defaultCustomerCode != null) {
+        codes['Cliente'] = settingsViewModel.defaultCustomerCode!;
+      }
+    }
+
+    // Cargar vendedor predeterminado
+    if (settingsViewModel.defaultSeller != null &&
+        settingsViewModel.defaultSeller!.isNotEmpty) {
+      controllers['Vendedor']?.text = settingsViewModel.defaultSeller!;
+
+      // Cargar código de vendedor si está disponible
+      if (settingsViewModel.defaultSellerCode != null) {
+        codes['Vendedor'] = settingsViewModel.defaultSellerCode!;
+      }
+    }
+
+    // Cargar depósito predeterminado
+    if (settingsViewModel.defaultWarehouse != null &&
+        settingsViewModel.defaultWarehouse!.isNotEmpty) {
+      controllers['Depósito']?.text = settingsViewModel.defaultWarehouse!;
+
+      // Cargar código de depósito si está disponible
+      if (settingsViewModel.defaultWarehouseCode != null) {
+        codes['Depósito'] = settingsViewModel.defaultWarehouseCode!;
+      }
+    }
+
+    _isInitialized = true;
+    notifyListeners();
+  }
 
   // Methods
   void addPayment(PaymentEntry payment) {
@@ -122,19 +176,19 @@ class BillingViewmodel extends ChangeNotifier {
   Map<String, dynamic> generateInvoiceJson(String type) {
     final invoice = {
       "correlname": "",
-      "codclie": controllers['Cliente']?.text,
-      "codvend": controllers['Vendedor']?.text,
-      "codubic": controllers['Depósito']?.text,
-      "mtototal": 100,
-      "tgravable": 100,
+      "codclie": codes['Cliente'] ?? "",
+      "codvend": codes['Vendedor'] ?? "",
+      "codubic": codes['Depósito'] ?? "",
+      "mtototal": totalAmount,
+      "tgravable": totalAmount,
       "texento": 0,
-      "monto": 100,
-      "mtotax": 100,
-      "contado": 100,
+      "monto": totalAmount,
+      "mtotax": totalAmount * 0.16, // Ajusta según tu lógica de impuestos
+      "contado": paidAmount,
       "tipocli": 1,
       "fechae": DateTime.now().toIso8601String().substring(0, 10),
       "fechav": DateTime.now().toIso8601String().substring(0, 10),
-      "id3": controllers['Cliente']?.text ?? "",
+      "id3": codes['Cliente'] ?? "",
       "notes": [],
       "ordenc": "123456",
       "telef": "34556633",
@@ -145,9 +199,10 @@ class BillingViewmodel extends ChangeNotifier {
       return {
         "coditem": product['code'] ?? "",
         "comments": [],
-        "precio": 100,
-        "cantidad": 1,
-        "mtotax": 30,
+        "precio": product['price'] ?? 0.0,
+        "cantidad": product['quantity'] ?? 1,
+        "mtotax": (product['total'] ?? 0.0) *
+            0.16, // Ajusta según tu lógica de impuestos
         "descomp": 1,
         "desseri": 0,
         "deslote": 0,
@@ -195,6 +250,18 @@ class BillingViewmodel extends ChangeNotifier {
       debugPrint("Error submitting invoice: $e");
       return false;
     }
+  }
+
+  void setClientCode(String code) {
+    codes['Cliente'] = code;
+  }
+
+  void setSellerCode(String code) {
+    codes['Vendedor'] = code;
+  }
+
+  void setWarehouseCode(String code) {
+    codes['Depósito'] = code;
   }
 
   @override
