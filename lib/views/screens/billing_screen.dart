@@ -15,7 +15,6 @@ class BillingScreen extends StatefulWidget {
 }
 
 class _BillingScreenState extends State<BillingScreen> {
-  bool _isInitialized = false;
   late BillingViewmodel _viewModel;
 
   @override
