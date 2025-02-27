@@ -24,10 +24,15 @@ class SetupViewmodel extends ChangeNotifier {
       final isSetupDone = await _settingsHelper.isInitialSetupDone();
       final adminPassword = await _settingsHelper.getSetting('admin_password');
 
+      // Debug: Print database values
+      debugPrint('isSetupDone: $isSetupDone');
+      debugPrint('adminPassword: $adminPassword');
+
       _settings = AppSettings(
         isSetupComplete: isSetupDone,
         adminPassword: adminPassword,
       );
+      notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -36,19 +41,26 @@ class SetupViewmodel extends ChangeNotifier {
   }
 
   Future<bool> setInitialPassword(String password) async {
+    debugPrint('Setting initial password...');
     _setLoading(true);
     _errorMessage = null;
 
     try {
       await _settingsHelper.setInitialPassword(password);
+      debugPrint('Password inserted into database.');
+
       _settings = _settings.copyWith(
         adminPassword: password,
         isSetupComplete: true,
       );
 
+      await _loadSettings();
+      debugPrint('Settings reloaded from database.');
+
       _setLoading(false);
       return true;
     } catch (e) {
+      debugPrint('Error: $e');
       _errorMessage = e.toString();
       _setLoading(false);
       return false;

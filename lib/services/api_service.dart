@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
+
+import 'package:saint_mobile/services/database_service.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -113,6 +116,9 @@ class ApiService {
       developer.log("Respuesta POST: ${response.statusCode}"); // Depuración
 
       if (response.statusCode == 200) {
+        await DatabaseService()
+            .log(endpoint, 'logs', newData: jsonDecode(payload));
+
         final dynamic decoded = jsonDecode(response.body);
         return decoded;
       } else {
@@ -155,7 +161,7 @@ class ApiService {
         throw HttpException("Error ${response.statusCode}: ${response.body}");
       }
     } on HttpException catch (e) {
-      print('Error en GET: $e');
+      debugPrint('Error en GET: $e');
       rethrow;
     }
   }

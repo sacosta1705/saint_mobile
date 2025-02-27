@@ -5,22 +5,41 @@ import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
 import 'package:saint_mobile/views/screens/initial_setup_screen.dart';
 import 'package:saint_mobile/views/screens/login_screen.dart';
 
-class SetupCheckScreen extends StatelessWidget {
+class SetupCheckScreen extends StatefulWidget {
   const SetupCheckScreen({super.key});
+
+  @override
+  State<SetupCheckScreen> createState() => _SetupCheckScreenState();
+}
+
+class _SetupCheckScreenState extends State<SetupCheckScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final setupViewModel =
+          Provider.of<SetupViewmodel>(context, listen: false);
+      setupViewModel.addListener(() {
+        setState(() {});
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final setupViewModel = Provider.of<SetupViewmodel>(context);
 
-    // Si estamos cargando o revisando la configuración
     if (setupViewModel.isLoading) {
       return _buildLoadingScreen();
     }
 
-    // Decidir qué pantalla mostrar basado en el estado del ViewModel
-    return setupViewModel.isSetupComplete
-        ? const LoginScreen()
-        : const InitialSetupScreen();
+    if (setupViewModel.isSetupComplete) {
+      return const LoginScreen();
+    }
+
+    return InitialSetupScreen(
+      onSetupComplete: () {},
+    );
   }
 
   Widget _buildLoadingScreen() {

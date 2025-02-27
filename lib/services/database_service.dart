@@ -33,11 +33,19 @@ class DatabaseService {
   Future<void> _onCreate(Database db, int version) async {
     try {
       String schema = await rootBundle.loadString('assets/sql/schema.sql');
+      debugPrint("Loaded schema: $schema");
       List<String> queries = schema.split(';');
       for (String query in queries) {
         String trimmedQuery = query.trim();
-        if (trimmedQuery.isNotEmpty) await db.execute(trimmedQuery);
+        if (trimmedQuery.isNotEmpty) {
+          debugPrint("Executing query: $trimmedQuery");
+          await db.execute(trimmedQuery);
+        }
       }
+
+      var tables = await db
+          .rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
+      debugPrint('Tables created: $tables');
     } catch (e) {
       debugPrint('Error al crear la base de datos.');
     }

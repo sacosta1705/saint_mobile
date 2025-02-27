@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
+import 'package:saint_mobile/views/screens/login_screen.dart';
 import 'package:saint_mobile/views/widgets/responsive_layout.dart';
 import 'package:saint_mobile/views/widgets/saint_appbar.dart';
 
@@ -199,8 +200,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                                 _passwordController.text,
                               );
 
-                              if (success && widget.onSetupComplete != null) {
-                                widget.onSetupComplete!();
+                              if (success && mounted) {
+                                Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                        builder: (_) => const LoginScreen()));
                               } else if (!success && mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(

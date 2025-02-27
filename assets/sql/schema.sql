@@ -9,6 +9,6 @@ CREATE TABLE logs(
     action TEXT NOT NULL,
     table_name TEXT NOT NULL,
     timestamp TEXT NOT NULL,
-    old_data TEXT NOT NULL,
-    new_data TEXT NOT NULL
+    old_data TEXT,
+    new_data TEXT
 );
