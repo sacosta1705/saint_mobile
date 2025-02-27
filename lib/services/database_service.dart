@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -29,12 +31,16 @@ class DatabaseService {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    await db.execute("""
-    CREATE TABLE $settingsTable(
-      id INTEGER PRIMARY KEY AUTOINCREMENT, 
-      key TEXT UNIQUE, 
-      value TEXT)
-    """);
+    try {
+      String schema = await rootBundle.loadString('assets/sql/schema.sql');
+      List<String> queries = schema.split(';');
+      for (String query in queries) {
+        String trimmedQuery = query.trim();
+        if (trimmedQuery.isNotEmpty) await db.execute(trimmedQuery);
+      }
+    } catch (e) {
+      debugPrint('Error al crear la base de datos.');
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -43,11 +49,13 @@ class DatabaseService {
 
   Future<int> insert(String table, Map<String, dynamic> row) async {
     Database db = await database;
-    return await db.insert(
+    int id = await db.insert(
       table,
       row,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    await log('INSERTAR', table, newData: row.toString());
+    return id;
   }
 
   Future<List<Map<String, dynamic>>> query(
@@ -67,31 +75,72 @@ class DatabaseService {
     );
   }
 
-  Future<int> update(
-    String table,
-    Map<String, dynamic> row, {
-    String? where,
-    List<dynamic>? whereArgs,
-  }) async {
+  Future<int> update(String table, Map<String, dynamic> row,
+      {String? where, List<dynamic>? whereArgs}) async {
     Database db = await database;
-    return await db.update(
-      table,
-      row,
-      where: where,
-      whereArgs: whereArgs,
-    );
+
+    List<Map<String, dynamic>> oldRecords =
+        await db.query(table, where: where, whereArgs: whereArgs);
+
+    int count = await db.update(table, row, where: where, whereArgs: whereArgs);
+
+    if (oldRecords.isNotEmpty) {
+      await log('ACTUALIZACION', table,
+          oldData: oldRecords.toString(), newData: row.toString());
+    }
+
+    return count;
   }
 
   Future<int> delete(
-    String table,
-    String? where,
-    List<dynamic>? whereArgs,
-  ) async {
+      String table, String? where, List<dynamic>? whereArgs) async {
     Database db = await database;
-    return await db.delete(
-      table,
-      where: where,
-      whereArgs: whereArgs,
+
+    List<Map<String, dynamic>> deletedRecords =
+        await db.query(table, where: where, whereArgs: whereArgs);
+
+    int count = await db.delete(table, where: where, whereArgs: whereArgs);
+
+    if (deletedRecords.isNotEmpty) {
+      await log("ELIMINADO", table, oldData: deletedRecords.toString());
+    }
+
+    return count;
+  }
+
+  Future<void> log(String action, String table,
+      {String? oldData, String? newData}) async {
+    final db = await database;
+    await db.insert('logs', {
+      'action': action,
+      'table_name': table,
+      'timestamp': DateTime.now().toIso8601String(),
+      'old_data': oldData,
+      'new_data': newData,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getLogs(
+      {String? action, String? date}) async {
+    final db = await database;
+    String whereClause = '';
+    List<String> whereArgs = [];
+
+    if (action != null) {
+      whereClause += 'action = ?';
+      whereArgs.add(action);
+    }
+
+    if (date != null) {
+      if (whereClause.isNotEmpty) whereClause += ' AND ';
+      whereClause += 'timestamp LIKE ?';
+      whereArgs.add('$date%');
+    }
+
+    return await db.query(
+      'logs',
+      where: whereClause.isNotEmpty ? whereClause : null,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
     );
   }
 }
