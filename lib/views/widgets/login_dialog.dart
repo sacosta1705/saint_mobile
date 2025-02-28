@@ -5,9 +5,9 @@ class LoginDialog extends StatefulWidget {
   final Function(String, String) onLogin;
 
   const LoginDialog({
-    Key? key,
+    super.key,
     required this.onLogin,
-  }) : super(key: key);
+  });
 
   @override
   State<LoginDialog> createState() => _LoginDialogState();

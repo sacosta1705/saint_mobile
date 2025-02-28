@@ -234,9 +234,8 @@ class _SettingScreenState extends State<SettingScreen> {
               const SizedBox(height: 16),
               FilledButton.icon(
                 style: ButtonStyle(
-                  backgroundColor:
-                      MaterialStateProperty.all(SaintColors.orange),
-                  padding: MaterialStateProperty.all(
+                  backgroundColor: WidgetStateProperty.all(SaintColors.orange),
+                  padding: WidgetStateProperty.all(
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                 ),
@@ -371,9 +370,8 @@ class _SettingScreenState extends State<SettingScreen> {
               // Save Button
               FilledButton.icon(
                 style: ButtonStyle(
-                  backgroundColor:
-                      MaterialStateProperty.all(SaintColors.orange),
-                  minimumSize: MaterialStateProperty.all(
+                  backgroundColor: WidgetStateProperty.all(SaintColors.orange),
+                  minimumSize: WidgetStateProperty.all(
                     const Size(double.infinity, 56),
                   ),
                 ),

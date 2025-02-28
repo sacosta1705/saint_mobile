@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:saint_mobile/services/api_service.dart';
 
 void main() async {
@@ -10,7 +11,9 @@ void main() async {
         await apiService.get('warehouses?activo=1');
 
     for (var item in data) {
-      print("Descripcion: ${item['descrip']}\n");
+      debugPrint("Descripcion: ${item['descrip']}\n");
     }
-  } catch (e) {}
+  } catch (e) {
+    debugPrint(e.toString());
+  }
 }
