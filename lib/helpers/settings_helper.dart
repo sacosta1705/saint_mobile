@@ -89,4 +89,31 @@ class SettingsHelper {
 
     return settings;
   }
+
+  Future<List<String>> getLogs({String? action, String? date}) async {
+    String whereClause = '';
+    List<dynamic> whereArgs = [];
+
+    if (action != null) {
+      whereClause += 'action = ?';
+      whereArgs.add(action);
+    }
+
+    if (date != null) {
+      if (whereClause.isNotEmpty) whereClause += ' AND ';
+
+      whereClause += 'timestamp LIKE ?';
+      whereArgs.add('$date%');
+    }
+
+    List<Map<String, dynamic>> logData = await _db.query(
+      'logs',
+      where: whereClause.isNotEmpty ? whereClause : null,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+    );
+
+    return logData.map((log) {
+      return "${log['action']} - ${log['table_name']} at ${log['timestamp']}";
+    }).toList();
+  }
 }

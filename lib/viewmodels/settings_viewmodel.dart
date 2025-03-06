@@ -8,8 +8,13 @@ class SettingsViewmodel extends ChangeNotifier {
   final SettingsHelper _settingsHelper;
 
   bool _isLoading = false;
+  bool _isLoadingLogs = false;
   String? _companyName;
   String? _errorMessage;
+  List<String> _logs = [];
+
+  List<String> get logs => _logs;
+  bool get isLoadingLogs => _isLoadingLogs;
 
   final Map<String, bool> _moduleAccess = {
     'billing': false,
@@ -234,6 +239,20 @@ class SettingsViewmodel extends ChangeNotifier {
       _setLoading(false);
       return false;
     }
+  }
+
+  Future<void> fetchLogs({String? action, String? date}) async {
+    _isLoadingLogs = true;
+    notifyListeners();
+
+    try {
+      _logs = await _settingsHelper.getLogs(action: action, date: date);
+    } catch (e) {
+      debugPrint("Error al leer auditoria: ${e.toString()}");
+    }
+
+    _isLoadingLogs = false;
+    notifyListeners();
   }
 
   void _setLoading(bool loading) {

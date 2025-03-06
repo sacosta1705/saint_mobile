@@ -382,10 +382,62 @@ class _SettingScreenState extends State<SettingScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              FilledButton.icon(
+                style: ButtonStyle(
+                  backgroundColor: WidgetStateProperty.all(SaintColors.orange),
+                  minimumSize: WidgetStateProperty.all(
+                    const Size(double.infinity, 56),
+                  ),
+                ),
+                onPressed: _showLogsModal,
+                icon: const Icon(Icons.list),
+                label: const Text(
+                  "VER AUDITORIA",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showLogsModal() async {
+    final settingsViewmodel =
+        Provider.of<SettingsViewmodel>(context, listen: false);
+
+    await settingsViewmodel.fetchLogs();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("REGISTROS DE AUDITORIA"),
+        content: settingsViewmodel.isLoadingLogs
+            ? const Center(child: CircularProgressIndicator())
+            : settingsViewmodel.logs.isEmpty
+                ? const Text("No hay registros disponibles")
+                : SizedBox(
+                    width: double.maxFinite,
+                    height: 300,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: settingsViewmodel.logs.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(settingsViewmodel.logs[index]),
+                        );
+                      },
+                    ),
+                  ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CERRAR"),
+          ),
+        ],
       ),
     );
   }
