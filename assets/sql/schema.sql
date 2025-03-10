@@ -10,5 +10,7 @@ CREATE TABLE logs(
     table_name TEXT NOT NULL,
     timestamp TEXT NOT NULL,
     old_data TEXT,
-    new_data TEXT
+    new_data TEXT,
+    record_id TEXT,
+    extra_info TEXT
 );

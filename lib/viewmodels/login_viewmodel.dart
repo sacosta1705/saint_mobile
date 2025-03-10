@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saint_mobile/helpers/settings_helper.dart';
 import 'package:saint_mobile/models/user.dart';
 import 'package:saint_mobile/services/api_service.dart';
 
@@ -21,6 +22,13 @@ class LoginViewmodel extends ChangeNotifier {
     _errorMessage = null;
 
     try {
+      final settingsHelper = SettingsHelper();
+      final terminal = await settingsHelper.getSetting('terminal');
+
+      if (terminal != null && terminal.isNotEmpty) {
+        _apiService.setTerminalName(terminal);
+      }
+
       final response = await _apiService.login(username, password);
       final token = _apiService.token;
 

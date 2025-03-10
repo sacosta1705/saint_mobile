@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
+import 'dart:convert';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -62,7 +63,9 @@ class DatabaseService {
       row,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    await log('INSERTAR', table, newData: row.toString());
+    String formattedData = const JsonEncoder.withIndent('    ').convert(row);
+    await log('INSERTAR', table,
+        newData: formattedData, recordId: id.toString());
     return id;
   }
 
@@ -93,8 +96,23 @@ class DatabaseService {
     int count = await db.update(table, row, where: where, whereArgs: whereArgs);
 
     if (oldRecords.isNotEmpty) {
-      await log('ACTUALIZACION', table,
-          oldData: oldRecords.toString(), newData: row.toString());
+      String oldDataFormatted =
+          const JsonEncoder.withIndent('    ').convert(oldRecords);
+      String newDataFormatted =
+          const JsonEncoder.withIndent('    ').convert(row);
+
+      String recordsId = oldRecords
+          .map((record) =>
+              record.containsKey('id') ? record['id'].toString() : '')
+          .join(', ');
+
+      await log(
+        'ACTUALIZACION',
+        table,
+        oldData: oldDataFormatted,
+        newData: newDataFormatted,
+        recordId: recordsId,
+      );
     }
 
     return count;
@@ -117,7 +135,10 @@ class DatabaseService {
   }
 
   Future<void> log(String action, String table,
-      {String? oldData, String? newData}) async {
+      {String? oldData,
+      String? newData,
+      String? recordId,
+      String? extra}) async {
     final db = await database;
     await db.insert('logs', {
       'action': action,
@@ -125,11 +146,13 @@ class DatabaseService {
       'timestamp': DateTime.now().toIso8601String(),
       'old_data': oldData,
       'new_data': newData,
+      'record_id': recordId,
+      'extra_info': extra,
     });
   }
 
   Future<List<Map<String, dynamic>>> getLogs(
-      {String? action, String? date}) async {
+      {String? action, String? date, String? table}) async {
     final db = await database;
     String whereClause = '';
     List<String> whereArgs = [];
@@ -145,10 +168,17 @@ class DatabaseService {
       whereArgs.add('$date%');
     }
 
+    if (table != null) {
+      if (whereClause.isNotEmpty) whereClause += ' AND ';
+      whereClause += 'table_name = ?';
+      whereArgs.add(table);
+    }
+
     return await db.query(
       'logs',
       where: whereClause.isNotEmpty ? whereClause : null,
       whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+      orderBy: 'timestamp DESC',
     );
   }
 }

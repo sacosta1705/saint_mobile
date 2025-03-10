@@ -13,9 +13,11 @@ class ApiService {
   ApiService._internal();
 
   String _baseUrl = "";
+  String _terminal = "";
 
   static const String apiKey = "B5D31933-C996-476C-B116-EF212A41479A";
   static const String apiId = "1093";
+
   String? token;
 
   bool isLoggedIn() => token != null;
@@ -32,6 +34,10 @@ class ApiService {
       _baseUrl = url;
     }
     developer.log('URL del servidor configurada: $_baseUrl');
+  }
+
+  void setTerminalName(String terminal) {
+    _terminal = terminal;
   }
 
   // Método para verificar si la URL base está configurada
@@ -59,7 +65,7 @@ class ApiService {
               'x-api-id': apiId,
               'Authorization': 'Basic ${toBase64(credentials)}'
             },
-            body: jsonEncode({'terminal': 'android'}),
+            body: jsonEncode({'terminal': _terminal}),
           )
           .timeout(const Duration(seconds: 30));
 
@@ -74,6 +80,7 @@ class ApiService {
         throw Exception(
             "El servidor no devolvió el token Pragma en los headers");
       }
+
       return jsonDecode(response.body);
     } on TimeoutException {
       throw TimeoutException(
@@ -100,7 +107,9 @@ class ApiService {
     }
 
     try {
-      developer.log("Enviando POST con token: $token"); // Depuración
+      developer.log("Enviando POST con token: $token");
+
+      final payloadString = jsonEncode(payload);
 
       final response = await http
           .post(
@@ -109,7 +118,7 @@ class ApiService {
               'Content-Type': 'application/json',
               'Pragma': token!,
             },
-            body: jsonEncode(payload),
+            body: payloadString,
           )
           .timeout(const Duration(seconds: 30));
 

@@ -18,6 +18,7 @@ class _SettingScreenState extends State<SettingScreen> {
   final TextEditingController _customerController = TextEditingController();
   final TextEditingController _sellerController = TextEditingController();
   final TextEditingController _warehouseController = TextEditingController();
+  final TextEditingController _terminalController = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +38,10 @@ class _SettingScreenState extends State<SettingScreen> {
       }
       if (viewModel.defaultWarehouse != null) {
         _warehouseController.text = viewModel.defaultWarehouse!;
+      }
+
+      if (viewModel.terminal != null) {
+        _terminalController.text = viewModel.terminal!;
       }
     });
   }
@@ -81,6 +86,7 @@ class _SettingScreenState extends State<SettingScreen> {
     final viewModel = Provider.of<SettingsViewmodel>(context, listen: false);
 
     viewModel.setServerUrl(_urlController.text);
+    viewModel.setTerminalName(_terminalController.text);
     viewModel.setDefaultCustomer(_customerController.text);
     viewModel.setDefaultSeller(_sellerController.text);
     viewModel.setDefaultWarehouse(_warehouseController.text);
@@ -221,6 +227,16 @@ class _SettingScreenState extends State<SettingScreen> {
             children: [
               // Server Connection Section
               _buildSectionTitle("Conexión al Servidor"),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _terminalController,
+                decoration: const InputDecoration(
+                  labelText: "Nombre de la estación (terminal)",
+                  hintText: "Nombre que identifica el equipo de facturación",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.terminal),
+                ),
+              ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _urlController,

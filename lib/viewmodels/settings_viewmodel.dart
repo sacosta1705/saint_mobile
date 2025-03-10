@@ -27,8 +27,8 @@ class SettingsViewmodel extends ChangeNotifier {
   String? _defaultSeller;
   String? _defaultWarehouse;
   String? _serverUrl;
+  String? _terminal;
 
-  // Añadimos códigos para cliente, vendedor y depósito
   String? _defaultCustomerCode;
   String? _defaultSellerCode;
   String? _defaultWarehouseCode;
@@ -48,8 +48,8 @@ class SettingsViewmodel extends ChangeNotifier {
   String? get defaultClient => _defaultCustomer;
   String? get defaultSeller => _defaultSeller;
   String? get defaultWarehouse => _defaultWarehouse;
+  String? get terminal => _terminal;
 
-  // Getters para los códigos
   String? get defaultCustomerCode => _defaultCustomerCode;
   String? get defaultSellerCode => _defaultSellerCode;
   String? get defaultWarehouseCode => _defaultWarehouseCode;
@@ -92,6 +92,11 @@ class SettingsViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setTerminalName(String terminal) {
+    _terminal = terminal;
+    notifyListeners();
+  }
+
   Future<void> _loadSettings() async {
     _setLoading(true);
 
@@ -99,6 +104,11 @@ class SettingsViewmodel extends ChangeNotifier {
     _serverUrl = await _settingsHelper.getSetting('server_url');
     if (_serverUrl != null && _serverUrl!.isNotEmpty) {
       _apiService.setBaseUrl(_serverUrl!);
+    }
+
+    _terminal = await _settingsHelper.getSetting('terminal');
+    if (_terminal != null && _terminal!.isNotEmpty) {
+      _apiService.setTerminalName(_terminal!);
     }
 
     // Load default values
@@ -189,6 +199,11 @@ class SettingsViewmodel extends ChangeNotifier {
       // Save server URL
       if (_serverUrl != null) {
         await _settingsHelper.setSetting('server_url', _serverUrl!);
+      }
+
+      if (_terminal != null) {
+        await _settingsHelper.setSetting('terminal', _terminal!);
+        _apiService.setTerminalName(_terminal!);
       }
 
       // Save company name if available
