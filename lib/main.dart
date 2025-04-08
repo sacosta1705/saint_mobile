@@ -57,7 +57,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Saint',
+      title: 'Facturación móvil Saint',
       debugShowCheckedModeBanner: false,
       home: const SetupCheckScreen(),
       routes: {

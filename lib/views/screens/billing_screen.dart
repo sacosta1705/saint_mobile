@@ -387,9 +387,6 @@ class _PaymentBottomSheetContentState
   }
 }
 
-// No modifico las clases utilitarias (UI) ya que no contienen lógica de negocio
-// Mantengo estas clases igual para preservar la funcionalidad de UI
-
 class InvoiceSummary extends StatelessWidget {
   final double totalAmount;
   final double paidAmount;
