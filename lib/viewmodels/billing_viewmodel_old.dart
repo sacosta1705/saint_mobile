@@ -35,7 +35,10 @@ class BillingViewmodel extends ChangeNotifier {
   // Products and payments lists
   final List<Map<String, dynamic>> products = [];
   final List<PaymentEntry> payments = [];
-  Map<String, dynamic>? selectedProduct;
+
+  Map<String, dynamic>? _selectedProduct;
+  Map<String, dynamic>? get selectedProduct => _selectedProduct;
+  
   bool _isInitialized = false;
 
   BillingViewmodel({required this.apiService});
@@ -98,6 +101,24 @@ class BillingViewmodel extends ChangeNotifier {
   }
 
   // Methods
+
+  void setSelectedProduct(Map<String, dynamic>? product){
+    _selectedProduct = product;
+
+    if(product != null) {
+      controllers['Producto']?.text = '${product['codprod'] ?? ''} - ${product['descrip'] ?? ''}';
+    } else {
+      controllers['Producto']?.clear();
+    }
+
+    notifyListeners();
+  }
+
+  void clearSelectedProduct(){
+    _selectedProduct = null;
+    controllers['Producto']?.clear();
+  }
+
   void addPayment(PaymentEntry payment) {
     payments.add(payment);
     notifyListeners();
@@ -109,10 +130,10 @@ class BillingViewmodel extends ChangeNotifier {
   }
 
   void addProduct() {
-    if (selectedProduct != null) {
+    if (_selectedProduct != null) {
       // Check if product already exists
       final existingProductIndex =
-          products.indexWhere((p) => p['code'] == selectedProduct!['codprod']);
+          products.indexWhere((p) => p['code'] == _selectedProduct!['codprod']);
 
       if (existingProductIndex != -1) {
         // Update existing product quantity
@@ -123,15 +144,15 @@ class BillingViewmodel extends ChangeNotifier {
       } else {
         // Add new product
         products.add({
-          'code': selectedProduct!['codprod'],
-          'description': selectedProduct!['descrip'],
+          'code': _selectedProduct!['codprod'],
+          'description': _selectedProduct!['descrip'],
           'quantity': 1,
-          'price': selectedProduct!['precio1'] ?? 0.0,
-          'total': selectedProduct!['precio1'] ?? 0.0,
+          'price': _selectedProduct!['precio1'] ?? 0.0,
+          'total': _selectedProduct!['precio1'] ?? 0.0,
         });
       }
 
-      selectedProduct = null;
+      _selectedProduct = null;
       controllers['Producto']?.clear();
       notifyListeners();
     }
@@ -254,14 +275,17 @@ class BillingViewmodel extends ChangeNotifier {
 
   void setClientCode(String code) {
     codes['Cliente'] = code;
+    notifyListeners();
   }
 
   void setSellerCode(String code) {
     codes['Vendedor'] = code;
+    notifyListeners();
   }
 
   void setWarehouseCode(String code) {
     codes['Depósito'] = code;
+    notifyListeners();
   }
 
   @override

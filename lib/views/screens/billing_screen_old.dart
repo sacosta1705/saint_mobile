@@ -85,25 +85,41 @@ class _BillingScreenState extends State<BillingScreen> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setStateDialog) => AlertDialog(
           title: Text("Buscar $type"),
           content: SearchDialogContent(
             type: type,
             searchController: searchController,
             data: filteredData,
-            onSearch: (query) => setState(() {
+            onSearch: (query) => setStateDialog(() {
               filteredData = data
                   .where((item) => item.values.any((v) =>
                       v.toString().toLowerCase().contains(query.toLowerCase())))
                   .toList();
             }),
-            onSelect: (item) {
+            onSelect: (selectedItem) {
               if (type == 'Producto') {
-                _viewModel.selectedProduct = item;
-                _viewModel.controllers[type]?.text =
-                    '${item['codprod']} - ${item['descrip']}';
+                _viewModel.setSelectedProduct(selectedItem);
               } else {
-                _viewModel.controllers[type]?.text = item['descrip'];
+                String codeValue = '';
+                String descripValue = selectedItem['descrip'] ?? 'N/A';
+                String displayText = descripValue;
+
+                if (type == 'Cliente') {
+                  codeValue = selectedItem['codclie'] ?? '';
+                  displayText = (codeValue.isNotEmpty ? '$codeValue - ' : '') + descripValue;
+                  _viewModel.setClientCode(codeValue);
+                } else if (type == 'Vendedor') {
+                    codeValue = selectedItem['codvend'] ?? '';
+                    displayText = (codeValue.isNotEmpty ? '$codeValue - ' : '') + descripValue;
+                    _viewModel.setSellerCode(codeValue);
+                } else if (type == 'Depósito') {
+                  codeValue = selectedItem['codubic'] ?? '';
+                  displayText = (codeValue.isNotEmpty ? '$codeValue - ' : '') + descripValue;
+                  _viewModel.setWarehouseCode(codeValue);
+                }
+
+                _viewModel.controllers[type]?.text = displayText;
               }
               Navigator.pop(context);
             },
