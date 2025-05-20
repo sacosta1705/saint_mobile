@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'package:saint_mobile/constants/saint_colors.dart';
 import 'package:saint_mobile/constants/saint_invoice_options.dart';
-import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
-import 'package:saint_mobile/views/widgets/responsive_layout.dart';
-import 'package:saint_mobile/views/widgets/saint_appbar.dart';
+import 'package:saint_mobile/features/settings/settings_viewmodel.dart';
+import 'package:saint_mobile/widgets/responsive_layout.dart';
+import 'package:saint_mobile/widgets/saint_appbar.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});

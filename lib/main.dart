@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_mobile/helpers/settings_helper.dart';
 import 'package:saint_mobile/services/api_service.dart';
-import 'package:saint_mobile/viewmodels/login_viewmodel.dart';
-import 'package:saint_mobile/viewmodels/menu_viewmodel.dart';
-import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
+import 'package:saint_mobile/features/login/login_viewmodel.dart';
+import 'package:saint_mobile/features/menu/menu_viewmodel.dart';
+import 'package:saint_mobile/features/settings/settings_viewmodel.dart';
 import 'package:saint_mobile/viewmodels/setup_viewmodel.dart';
-import 'package:saint_mobile/views/screens/billing_screen.dart';
-import 'package:saint_mobile/views/screens/login_screen.dart';
-import 'package:saint_mobile/views/screens/menu_screen.dart';
-import 'package:saint_mobile/views/screens/setup_check_screen.dart';
-import 'package:saint_mobile/views/screens/setting_screen.dart';
+import 'package:saint_mobile/features/transaction/transaction_screen.dart';
+import 'package:saint_mobile/features/login/login_screen.dart';
+import 'package:saint_mobile/features/menu/menu_screen.dart';
+import 'package:saint_mobile/features/startup/setup_check_screen.dart';
+import 'package:saint_mobile/features/settings/setting_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,10 +64,10 @@ class App extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/settings': (context) => const SettingScreen(),
         '/menu': (context) => const MenuScreen(),
-        '/billing': (context) => const BillingScreen(),
-        '/orders': (context) => const BillingScreen(),
-        '/delivery_notes': (context) => const BillingScreen(),
-        '/budget': (context) => const BillingScreen(),
+        '/billing': (context) => const TransactionScreen(),
+        '/orders': (context) => const TransactionScreen(),
+        '/delivery_notes': (context) => const TransactionScreen(),
+        '/budget': (context) => const TransactionScreen(),
       },
     );
   }

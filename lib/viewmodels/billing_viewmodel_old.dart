@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_mobile/services/api_service.dart';
-import 'package:saint_mobile/viewmodels/settings_viewmodel.dart';
+import 'package:saint_mobile/features/settings/settings_viewmodel.dart';
 
 class PaymentEntry {
   final Map<String, dynamic> instrument;

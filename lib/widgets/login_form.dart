@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_mobile/constants/saint_colors.dart';
-import 'package:saint_mobile/viewmodels/login_viewmodel.dart';
+import 'package:saint_mobile/features/login/login_viewmodel.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
