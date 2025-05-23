@@ -14,3 +14,18 @@ CREATE TABLE logs(
     record_id TEXT,
     extra_info TEXT
 );
+
+CREATE TABLE company_config (
+    id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    name TEXT NOT NULL,
+    tax_identifier TEXT NOT NULL,
+    country_code INTEGER NOT NULL,
+    state_code INTEGER NOT NULL,
+    city_code INTEGER NOT NULL,
+    address1 TEXT NOT NULL,
+    address2 TEXT,
+    tax_code TEXT NOT NULL,
+    reference_symbol TEXT NOT NULL,
+    reference_rate REAL NOT NULL,
+    tax_retencion_percentage REAL
+);
