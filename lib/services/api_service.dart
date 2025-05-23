@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 
@@ -170,7 +169,57 @@ class ApiService {
         throw HttpException("Error ${response.statusCode}: ${response.body}");
       }
     } on HttpException catch (e) {
-      debugPrint('Error en GET: $e');
+      developer.log('Error en GET: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchCompanyConfig() async {
+    developer.log(
+        "[ApiService] Solicitando configuracion de la empresa desde /adm/config/1");
+
+    if (!hasValidBaseUrl()) {
+      developer.log("[ApiService] Error: URL base no configurada.");
+      throw Exception("URL del servidor no configurada");
+    }
+
+    if (token == null || token!.isEmpty) {
+      developer.log("[ApiService] Error: token no disponible. Sesion vencida.");
+      throw Exception("No autenticado. Inicie sesion nuevamente.");
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/adm/config/1"),
+        headers: {
+          'Content-type': 'application/json',
+          'Pragma': token!,
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      developer.log(
+          "[ApiService] Datos de configuracion de /adm/config/1 recibidos.");
+
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        } else if (decoded is List &&
+            decoded.isNotEmpty &&
+            decoded.first is Map<String, dynamic>) {
+          return decoded.first;
+        }
+        throw const FormatException(
+            "Formato JSON inesperado para la configuracion de la empresa");
+      } else {
+        throw HttpException("Error ${response.statusCode}: ${response.body}");
+      }
+    } on TimeoutException {
+      throw TimeoutException("Tiempo limite de espera superado.");
+    } on HttpException catch (e) {
+      developer.log(e.message);
+      rethrow;
+    } catch (e) {
       rethrow;
     }
   }

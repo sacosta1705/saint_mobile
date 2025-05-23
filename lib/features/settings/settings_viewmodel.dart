@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer' as developer;
+
+import 'package:saint_mobile/models/company_settings.dart';
 import 'package:saint_mobile/services/api_service.dart';
 import 'package:saint_mobile/helpers/settings_helper.dart';
 
@@ -15,6 +18,8 @@ class SettingsViewmodel extends ChangeNotifier {
 
   List<String> get logs => _logs;
   bool get isLoadingLogs => _isLoadingLogs;
+
+  CompanySettings? _settings;
 
   final Map<String, bool> _moduleAccess = {
     'billing': false,
@@ -49,6 +54,7 @@ class SettingsViewmodel extends ChangeNotifier {
   String? get defaultSeller => _defaultSeller;
   String? get defaultWarehouse => _defaultWarehouse;
   String? get terminal => _terminal;
+  CompanySettings? get settings => _settings;
 
   String? get defaultCustomerCode => _defaultCustomerCode;
   String? get defaultSellerCode => _defaultSellerCode;
@@ -132,10 +138,18 @@ class SettingsViewmodel extends ChangeNotifier {
       }
     }
 
-    // Get company name from stored settings if available
-    _companyName = await _settingsHelper.getSetting('company_name');
+    _settings = await _settingsHelper.getCompanySettings();
+    if (_settings != null) {
+      _companyName = _settings!.name;
+      developer.log(
+          "[SettingsViewModel] Configuracion de la empresa cargada desde base de datos.");
+    } else {
+      developer.log(
+          "[SettingsViewModel] Error en la carga de la configuracion de la empresa.");
+    }
 
     _setLoading(false);
+    developer.log("Carga de configuracion exitosa.");
   }
 
   Future<bool> testUrlConnection(

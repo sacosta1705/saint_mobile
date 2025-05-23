@@ -1,7 +1,11 @@
+import 'package:flutter/widgets.dart';
+import 'package:saint_mobile/models/company_settings.dart';
 import 'package:saint_mobile/services/database_service.dart';
+import 'package:sqflite/sql.dart';
 
 class SettingsHelper {
   final DatabaseService _db = DatabaseService();
+  static const String _companyConfigTable = "company_config";
 
   Future<bool> isInitialSetupDone() async {
     var results = await _db.query(
@@ -69,7 +73,6 @@ class SettingsHelper {
     }
   }
 
-  // Delete a setting
   Future<void> deleteSetting(String key) async {
     await _db.delete(
       DatabaseService.settingsTable,
@@ -78,7 +81,6 @@ class SettingsHelper {
     );
   }
 
-  // Get all settings
   Future<Map<String, String>> getAllSettings() async {
     var results = await _db.query(DatabaseService.settingsTable);
 
@@ -115,5 +117,38 @@ class SettingsHelper {
     return logData.map((log) {
       return "${log['action']} - ${log['table_name']} at ${log['timestamp']}";
     }).toList();
+  }
+
+  Future<void> saveCompanySettings(CompanySettings settings) async {
+    debugPrint(
+        "[SettingsHelper] Guardando CompanySettings en la base de datos...");
+
+    final db = await _db.database;
+    await db.insert(
+      _companyConfigTable,
+      settings.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    debugPrint(
+        "[SettingsHelper] CompanySettings guardados: ${settings.toMap()}");
+  }
+
+  Future<CompanySettings?> getCompanySettings() async {
+    debugPrint("[SettingsHelper] Leyendo datos de CompanySettings...");
+
+    final db = await _db.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _companyConfigTable,
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+
+    if (maps.isNotEmpty) {
+      debugPrint("[SettingsHelper] CompanySettings encontrados: ${maps.first}");
+      return CompanySettings.fromMap(maps.first);
+    }
+    debugPrint("[SettingsHelper] No se encontro data.");
+    return null;
   }
 }
