@@ -1,7 +1,9 @@
 // transaction_viewmodel.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:saint_mobile/models/transaction.dart';
+import 'package:saint_mobile/models/payment_item.dart';
+import 'package:saint_mobile/models/product_item.dart';
+import 'package:saint_mobile/models/search_result_item.dart';
 import 'package:saint_mobile/services/api_service.dart'; // TU ApiService REAL
 
 class TransactionViewModel extends ChangeNotifier {
@@ -11,7 +13,8 @@ class TransactionViewModel extends ChangeNotifier {
   SearchResultItem? selectedClient;
   SearchResultItem? selectedSeller;
   SearchResultItem? selectedWarehouse;
-  List<TextEditingController> generalNoteControllers = List.generate(10, (_) => TextEditingController());
+  List<TextEditingController> generalNoteControllers =
+      List.generate(10, (_) => TextEditingController());
 
   List<ProductItem> productItems = [];
   SearchResultItem? currentSelectedProductSearch;
@@ -26,9 +29,9 @@ class TransactionViewModel extends ChangeNotifier {
   final TextEditingController warehouseController = TextEditingController();
   final TextEditingController productSearchController = TextEditingController();
 
-  TransactionViewModel({required this.apiService, required this.transactionTypeApiCode});
+  TransactionViewModel(
+      {required this.apiService, required this.transactionTypeApiCode});
 
-  // ... (selectClient, selectSeller, selectWarehouse se mantienen igual) ...
   void selectClient(SearchResultItem client) {
     selectedClient = client;
     clientController.text = "${client.id} - ${client.description}";
@@ -47,29 +50,35 @@ class TransactionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
   void selectProductSearchResult(SearchResultItem product) {
     currentSelectedProductSearch = product;
     // Mostrar precio1 (sin IVA) en la búsqueda. Podrías optar por mostrar precioi1.
-    productSearchController.text = "${product.id} - ${product.description} (Precio s/IVA: ${product.price1?.toStringAsFixed(2) ?? 'N/A'})";
+    productSearchController.text =
+        "${product.id} - ${product.description} (Precio s/IVA: ${product.price1?.toStringAsFixed(2) ?? 'N/A'})";
     notifyListeners();
   }
 
   void addProductToList() {
-    if (currentSelectedProductSearch == null || 
+    if (currentSelectedProductSearch == null ||
         currentSelectedProductSearch!.price1 == null || // Necesitamos precio1
-        currentSelectedProductSearch!.pricei1 == null) { // Y precioi1 para calcular impuesto
-        // Podrías mostrar un error si falta alguno de estos precios cruciales
-        print("Error: El producto seleccionado no tiene precios válidos (precio1 o precioi1).");
-        productSearchController.text = "Error: precios no válidos para ${currentSelectedProductSearch?.id}";
-        currentSelectedProductSearch = null; // Limpiar para evitar intentos repetidos
-        notifyListeners();
+        currentSelectedProductSearch!.pricei1 == null) {
+      // Y precioi1 para calcular impuesto
+      // Podrías mostrar un error si falta alguno de estos precios cruciales
+      print(
+          "Error: El producto seleccionado no tiene precios válidos (precio1 o precioi1).");
+      productSearchController.text =
+          "Error: precios no válidos para ${currentSelectedProductSearch?.id}";
+      currentSelectedProductSearch =
+          null; // Limpiar para evitar intentos repetidos
+      notifyListeners();
       return;
     }
 
-    int existingIndex = productItems.indexWhere((p) => p.coditem == currentSelectedProductSearch!.id);
+    int existingIndex = productItems
+        .indexWhere((p) => p.coditem == currentSelectedProductSearch!.id);
     if (existingIndex != -1) {
-      productItems[existingIndex].updateQuantity(productItems[existingIndex].quantity + 1);
+      productItems[existingIndex]
+          .updateQuantity(productItems[existingIndex].quantity + 1);
     } else {
       productItems.add(ProductItem(
         coditem: currentSelectedProductSearch!.id,
@@ -97,7 +106,7 @@ class TransactionViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   void addPayment(SearchResultItem instrument, double amount) {
     if (amount <= 0) return;
     paymentItems.add(PaymentItem(
@@ -118,16 +127,19 @@ class TransactionViewModel extends ChangeNotifier {
 
   // --- Getters para el Resumen de Totales (Actualizados) ---
   // 1. Total Renglones (Subtotal sin IVA)
-  double get totalRenglones => productItems.fold(0.0, (sum, item) => sum + item.totalNoTax);
+  double get totalRenglones =>
+      productItems.fold(0.0, (sum, item) => sum + item.totalNoTax);
 
   // 2. Total Impuestos (IVA)
-  double get totalImpuestos => productItems.fold(0.0, (sum, item) => sum + item.itemTaxAmount);
+  double get totalImpuestos =>
+      productItems.fold(0.0, (sum, item) => sum + item.itemTaxAmount);
 
   // 3. Total Factura (Renglones + IVA)
   double get totalFactura => totalRenglones + totalImpuestos;
-  
+
   // Para pagos (se mantienen igual, pero dependen de totalFactura)
-  double get totalPagado => paymentItems.fold(0.0, (sum, item) => sum + item.amount);
+  double get totalPagado =>
+      paymentItems.fold(0.0, (sum, item) => sum + item.amount);
   double get montoRestante => totalFactura - totalPagado;
 
   // 4. Número Total de Artículos
@@ -135,15 +147,16 @@ class TransactionViewModel extends ChangeNotifier {
     if (productItems.isEmpty) return 0;
     return productItems.fold(0.0, (sum, item) => sum + item.quantity);
   }
-  
+
   // ... (fetchDataForSearch se mantiene igual, asumiendo que la API devuelve precio1 y precioi1) ...
   Future<List<SearchResultItem>> fetchDataForSearch(String typeForApi) async {
     final endpointMapping = {
       'Cliente': 'customers?activo=1',
       'Vendedor': 'sellers?activo=1',
       'Depósito': 'warehouses?activo=1',
-      'Producto': 'products?activo=1&esimport=0&esempaque=0&deslote=0&descomp=0',
-      'InstrumentoPago': 'paymethods?activo=1', 
+      'Producto':
+          'products?activo=1&esimport=0&esempaque=0&deslote=0&descomp=0',
+      'InstrumentoPago': 'paymethods?activo=1',
     };
     final endpoint = endpointMapping[typeForApi];
     if (endpoint == null) {
@@ -165,7 +178,6 @@ class TransactionViewModel extends ChangeNotifier {
     }
   }
 
-
   Future<bool> submitTransaction() async {
     if (selectedClient == null) {
       _setError("Debe seleccionar un cliente.");
@@ -176,15 +188,20 @@ class TransactionViewModel extends ChangeNotifier {
       return false;
     }
     if (montoRestante.abs() > 0.01 && totalFactura > 0) {
-      _setError("El monto restante debe ser cero para finalizar. Restante: ${montoRestante.toStringAsFixed(2)}");
+      _setError(
+          "El monto restante debe ser cero para finalizar. Restante: ${montoRestante.toStringAsFixed(2)}");
       return false;
     }
 
     _setLoading(true);
     String currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    String dueDate = DateFormat('yyyy-MM-dd').format(DateTime.now().add(const Duration(days: 1)));
+    String dueDate = DateFormat('yyyy-MM-dd')
+        .format(DateTime.now().add(const Duration(days: 1)));
 
-    List<String> notesToSend = generalNoteControllers.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList();
+    List<String> notesToSend = generalNoteControllers
+        .map((c) => c.text.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
     if (notesToSend.length > 10) notesToSend = notesToSend.sublist(0, 10);
 
     Map<String, dynamic> invoiceData = {
@@ -192,11 +209,14 @@ class TransactionViewModel extends ChangeNotifier {
       "codclie": selectedClient!.id,
       "codvend": selectedSeller?.id ?? "",
       "codubic": selectedWarehouse?.id ?? "",
-      "mtototal": totalFactura,       // Total general CON impuesto
-      "tgravable": totalRenglones,    // Base imponible (suma de totales SIN impuesto de items)
-      "texento": 0,                   // Asumir 0 exento por ahora
-      "monto": totalRenglones,        // Monto base (igual a tgravable si todo es gravable)
-      "mtotax": totalFactura,         // Según tu JSON, este es el MONTO TOTAL CON IMPUESTO
+      "mtototal": totalFactura, // Total general CON impuesto
+      "tgravable":
+          totalRenglones, // Base imponible (suma de totales SIN impuesto de items)
+      "texento": 0, // Asumir 0 exento por ahora
+      "monto":
+          totalRenglones, // Monto base (igual a tgravable si todo es gravable)
+      "mtotax":
+          totalFactura, // Según tu JSON, este es el MONTO TOTAL CON IMPUESTO
       "contado": totalPagado,
       "tipocli": 1,
       "fechae": currentDate,
@@ -211,17 +231,21 @@ class TransactionViewModel extends ChangeNotifier {
     Map<String, dynamic> transactionPayload = {
       "additional": [],
       "invoice": invoiceData,
-      "items": productItems.map((item) => item.toJson()).toList(), // toJson de ProductItem ahora usa itemTaxAmount para "mtotax"
+      "items": productItems
+          .map((item) => item.toJson())
+          .toList(), // toJson de ProductItem ahora usa itemTaxAmount para "mtotax"
       "payforms": paymentItems.map((item) => item.toJson()).toList(),
-      "taxes": [ // Array de impuestos globales de la factura
+      "taxes": [
+        // Array de impuestos globales de la factura
         {
-          "monto": totalImpuestos, // La suma de los impuestos de todos los items
-          "codtaxs": "IVA",      // Código del impuesto (ej. "IVA")
-          "tgravable": 16.0,     // Tasa del impuesto (ej. 16.0 para 16%)
+          "monto":
+              totalImpuestos, // La suma de los impuestos de todos los items
+          "codtaxs": "IVA", // Código del impuesto (ej. "IVA")
+          "tgravable": 16.0, // Tasa del impuesto (ej. 16.0 para 16%)
         }
       ],
     };
-    
+
     List<Map<String, dynamic>> finalPayload = [transactionPayload];
 
     try {
@@ -247,25 +271,25 @@ class TransactionViewModel extends ChangeNotifier {
       controller.clear();
     }
     for (var item in productItems) {
-        item.disposeCommentControllers();
+      item.disposeCommentControllers();
     }
     productItems.clear();
     currentSelectedProductSearch = null;
     paymentItems.clear();
     errorMessage = null;
-    isLoading = false; 
+    isLoading = false;
     notifyListeners();
   }
 
   void _setLoading(bool value) {
-    if (isLoading == value) return; 
+    if (isLoading == value) return;
     isLoading = value;
     if (value) errorMessage = null;
     notifyListeners();
   }
 
   void _setError(String message) {
-    isLoading = false; 
+    isLoading = false;
     errorMessage = message;
     notifyListeners();
   }
@@ -285,7 +309,7 @@ class TransactionViewModel extends ChangeNotifier {
       controller.dispose();
     }
     for (var item in productItems) {
-        item.disposeCommentControllers(); 
+      item.disposeCommentControllers();
     }
     super.dispose();
   }
