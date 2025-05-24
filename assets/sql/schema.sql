@@ -27,5 +27,5 @@ CREATE TABLE company_config (
     tax_code TEXT NOT NULL,
     reference_symbol TEXT NOT NULL,
     reference_rate REAL NOT NULL,
-    tax_retencion_percentage REAL
+    tax_retention_percentage REAL
 );
